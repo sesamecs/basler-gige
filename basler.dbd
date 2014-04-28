@@ -1,0 +1,3 @@
+registrar(baslerRegister)
+driver(drvBasler)
+device(waveform, INST_IO, devWaveformBasler, "basler")
