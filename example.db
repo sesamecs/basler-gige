@@ -9,7 +9,7 @@ record(waveform,"TL1-DI-CAM1:getImage")
 	field(DTYP, "basler")
 	field(INP,  "@C1:")
 	field(FTVL, "UCHAR")
-	field(NELM, "1228800")
+	field(NELM, "1251936")
 }
 
 record(waveform,"BOC03-DI-CAM1:getImage")
@@ -18,5 +18,5 @@ record(waveform,"BOC03-DI-CAM1:getImage")
 	field(DTYP, "basler")
 	field(INP,  "@C2:")
 	field(FTVL, "UCHAR")
-	field(NELM, "1228800")
+	field(NELM, "1251936")
 }

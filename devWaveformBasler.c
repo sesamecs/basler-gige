@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 /*EPICS includes*/
 #include <epicsExport.h>
@@ -33,7 +37,7 @@ static	int		inputCount;
 /*Function prototypes*/
 static	long			init(int after);
 static	long			initRecord(waveformRecord *record);
-static 	long			read(waveformRecord *record);
+static 	long			readRecord(waveformRecord *record);
 static	void*			thread(void* arg);
 
 /*Function definitions*/
@@ -95,9 +99,9 @@ initRecord(waveformRecord *record)
 }
 
 static long 
-read(waveformRecord *record)
+readRecord(waveformRecord *record)
 {
-	int			status;
+	int			status, fd, n;
 	pthread_t	handle;
 	input_t*	private	=	(input_t*)record->dpvt;
 
@@ -141,6 +145,21 @@ read(waveformRecord *record)
 	record->val		=	record->bptr;
 	record->pact	=	false;
 
+	/*Create file*/
+	fd	=	open("image.pgm", O_RDWR);
+	if (fd < 0)
+		perror("open");
+	/*Write image header*/
+	n	=	write(fd, "P5\n1296 966\n255\n", strlen("P5\n1296 966\n255\n"));
+	if (n < strlen("P5\n1296 966\n255\n"))
+		perror("write");
+	/*Dump image binary*/
+	n	=	write(fd, record->bptr, record->nelm);
+	if (n < record->nelm)
+		perror("write");
+	/*Close file*/
+	close(fd);
+
 	return 0;
 }
 
@@ -183,6 +202,6 @@ struct devsup {
     init,
     initRecord,
     NULL,
-    read
+    readRecord
 };
 epicsExportAddress(dset, devWaveformBasler);
