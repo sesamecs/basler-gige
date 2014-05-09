@@ -1,3 +1,5 @@
 registrar(baslerRegister)
 driver(drvBasler)
 device(waveform, INST_IO, devWaveformBasler, "basler")
+device(longin, INST_IO, devLonginBasler, "basler")
+device(longout, INST_IO, devLongoutBasler, "basler")

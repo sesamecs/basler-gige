@@ -13,6 +13,8 @@ LIBRARY_IOC		=	basler
 basler_SRCS		+=	basler_registerRecordDeviceDriver.cpp
 basler_SRCS		+= 	drvBasler.cpp
 basler_SRCS		+=	devWaveformBasler.c
+basler_SRCS		+=	devLonginBasler.c
+basler_SRCS		+=	devLongoutBasler.c
 basler_LIBS		+= 	$(EPICS_BASE_IOC_LIBS)
 INSTALL_DBDS	+= 	$(INSTALL_DBD)/basler.dbd
 

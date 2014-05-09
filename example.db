@@ -7,16 +7,21 @@ record(waveform,"TL1-DI-CAM1:getImage")
 {
 	field(DESC,	"Captures a single frame")
 	field(DTYP, "basler")
-	field(INP,  "@C1:")
+	field(INP,  "@C1:capture")
 	field(FTVL, "UCHAR")
 	field(NELM, "1251936")
 }
 
-record(waveform,"BOC03-DI-CAM1:getImage")
+record(longin, "TL1-DI-CAM1:getExposure")
 {
-	field(DESC,	"Captures a single frame")
+	field(SCAN, "5 second")
 	field(DTYP, "basler")
-	field(INP,  "@C2:")
-	field(FTVL, "UCHAR")
-	field(NELM, "1251936")
+	field(INP,  "@C1:getExposure")
 }
+
+record(longout, "TL1-DI-CAM1:setExposure")
+{
+	field(DTYP, "basler")
+	field(OUT,  "@C1:setExposure")
+}
+

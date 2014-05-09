@@ -15,7 +15,7 @@
 #include <errlog.h>
 #include <dbAccess.h>
 #include <recSup.h>
-#include <waveformRecord.h>
+#include <longinRecord.h>
 
 /*Application includes*/
 #include "drvBasler.h"
@@ -24,6 +24,7 @@
 #define NUMBER_OF_INPUTS	10
 #define NAME_LENGTH			10
 #define COMMAND_LENGTH		20
+#define VALUE_LENGTH		10
 
 typedef struct
 {
@@ -37,10 +38,10 @@ static	input_t	inputs[NUMBER_OF_INPUTS];
 static	int		inputCount;
 
 /*Function prototypes*/
-static	long			init(int after);
-static	long			initRecord(waveformRecord *record);
-static 	long			readRecord(waveformRecord *record);
-static	void*			thread(void* arg);
+static	long	init(int after);
+static	long	initRecord(longinRecord *record);
+static 	long	readRecord(longinRecord *record);
+static	void*	thread(void* arg);
 
 /*Function definitions*/
 static long
@@ -52,7 +53,7 @@ init(int after)
 }
 
 static long 
-initRecord(waveformRecord *record)
+initRecord(longinRecord *record)
 {
 	char	*parameters;
 	int		nameLength;
@@ -87,8 +88,8 @@ initRecord(waveformRecord *record)
 	/* Skip separator*/
     parameters	+= 	nameLength + 1;
 
-	/*Check and read command*/
-	if (!strlen(parameters))
+    /* Parse command*/
+	if (strlen(parameters) == 0)
 	{
 		errlogPrintf("Unable to initialize %s: Illegal input command\r\n", record->name);
 		return -1;
@@ -103,6 +104,7 @@ initRecord(waveformRecord *record)
 		errlogPrintf("Unable to initalize %s: Could not open device\r\n", record->name);
 		return -1;
 	}
+
 	record->dpvt				=	&inputs[inputCount];
 	inputCount++;
 
@@ -110,9 +112,9 @@ initRecord(waveformRecord *record)
 }
 
 static long 
-readRecord(waveformRecord *record)
+readRecord(longinRecord *record)
 {
-	int			status, fd, n;
+	int			status;
 	pthread_t	handle;
 	input_t*	private	=	(input_t*)record->dpvt;
 
@@ -121,19 +123,16 @@ readRecord(waveformRecord *record)
 		errlogPrintf("Unable to read %s: Null record pointer\r\n", record->name);
 		return -1;
 	}
+
     if (!private)
     {
         errlogPrintf("Unable to read %s: Null private structure pointer\r\n", record->name);
         return -1;
     }
-	if (!record->bptr)
+
+	if (!private->command || !strlen(private->command))
 	{
-		errlogPrintf("Unable to read %s: Null array pointer\r\n", record->name);
-		return -1;
-	}
-	if (strcmp(private->command, "capture") != 0)
-	{
-		errlogPrintf("Unable to read %s: Invalid command\r\n", record->name);
+		errlogPrintf("Unable to read %s: Command is null or empty\r\n", record->name);
 		return -1;
 	}
 
@@ -157,24 +156,10 @@ readRecord(waveformRecord *record)
 	/*
 	 * This is the second pass, complete the request and return
 	 */
-	record->nord	=	record->nelm;
-	record->val		=	record->bptr;
+
 	record->pact	=	false;
 
-	/*Create file*/
-	fd	=	open("image.pgm", O_CREAT | O_RDWR);
-	if (fd < 0)
-		perror("open");
-	/*Write image header*/
-	n	=	write(fd, "P5\n1296 966\n255\n", strlen("P5\n1296 966\n255\n"));
-	if (n < strlen("P5\n1296 966\n255\n"))
-		perror("write");
-	/*Dump image binary*/
-	n	=	write(fd, record->bptr, record->nelm);
-	if (n < record->nelm)
-		perror("write");
-	/*Close file*/
-	close(fd);
+	printf("%s.VAL=%u\r\n", record->name, record->val);
 
 	return 0;
 }
@@ -183,13 +168,13 @@ void*
 thread(void* arg)
 {
 	int				status;
-	waveformRecord*	record	=	(waveformRecord*)arg;
+	longinRecord*	record	=	(longinRecord*)arg;
 	input_t*		private	=	(input_t*)record->dpvt;
 
 	/*Detach thread*/
 	pthread_detach(pthread_self());
 
-	status	=	basler_capture(private->device, record->bptr, record->nelm);
+	status	=	basler_getExposure(private->device, (uint32_t*)&record->val);
 	if (status < 0)
 	{
 		errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
@@ -211,7 +196,7 @@ struct devsup {
     DEVSUPFUN init_record;
     DEVSUPFUN get_ioint_info;
     DEVSUPFUN io;
-} devWaveformBasler =
+} devLonginBasler =
 {
     5,
     NULL,
@@ -220,4 +205,4 @@ struct devsup {
     NULL,
     readRecord
 };
-epicsExportAddress(dset, devWaveformBasler);
+epicsExportAddress(dset, devLonginBasler);

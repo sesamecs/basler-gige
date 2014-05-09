@@ -18,34 +18,50 @@
 
 #include "drvBasler.h"
 
+using namespace std;
 using namespace Basler_GigECameraParams;
 using namespace Pylon;
-using namespace GenApi;
-using namespace std;
 
 /*
  * Macros
  */
 #define NUMBER_OF_DEVICES	3
 
+typedef enum
+{
+	OPCODE_CAPTURE		,
+	OPCODE_SET_EXPOSURE	,
+	OPCODE_GET_EXPOSURE
+} opcode_t;
+
 typedef struct
 {
-	char	name	[30];
-	char	ip		[30];
+	char		name	[30];
+	char		ip		[30];
+	pthread_t	handle;
+	opcode_t	opcode;
+	uint8_t*	imageBuffer;
+	uint32_t	imageSize;
+	uint32_t	exposure;
 } configuration_t;
 
 /*
  * Private members
  */
-static	configuration_t	configurations[NUMBER_OF_DEVICES];
-static	int				deviceCount	=	0;
-static	pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static	configuration_t			configurations[NUMBER_OF_DEVICES];
+static	int						deviceCount		=	0;
+static	pthread_mutex_t			mutex 			= PTHREAD_MUTEX_INITIALIZER;
+static	pthread_cond_t  		condition		= PTHREAD_COND_INITIALIZER;
 
 /*
  * Private function prototypes
  */
 static	long	init(void);
 static	long	report(int detail);
+static	void* 	thread(void* arg);
+static	void	capture(CBaslerGigECamera* camera, uint8_t *image, uint32_t imageSize);
+static	void	setExposure(CBaslerGigECamera* camera, uint32_t exposure);
+static	void	getExposure(CBaslerGigECamera* camera, uint32_t *exposure);
 
 /*
  * Function definitions
@@ -54,15 +70,19 @@ static	long	report(int detail);
 static long 
 init(void)
 {
-	int					device; 
-	int 				status;
+	int	device; 
+	int status;
 
+	/*Create and start thread for each configured camera*/
 	for (device = 0; device < deviceCount; device++)
 	{
-		/*TODO: Connect to all cameras*/
-		status = status;
+		status	=	pthread_create(&configurations[device].handle, NULL, thread, (void*)&configurations[device]);	
+		if (status)
+		{
+			errlogPrintf("Unable to initialize camera %s: Unable to create thread\r\n", configurations[device].name);
+			return -1;
+		}
 	}
-
 	return 0;
 }
 
@@ -82,34 +102,60 @@ basler_open(char *deviceName)
 }
 
 long
-basler_read(basler_t device, uint8_t *buffer, uint32_t length)
+basler_capture(basler_t device, uint8_t *imageBuffer, uint32_t imageSize)
 {
-	/*Acquire mutex, start IO, release mutex*/
+	configurations[device].imageBuffer	=	imageBuffer;
+	configurations[device].imageSize	=	imageSize;
+	configurations[device].opcode		=	OPCODE_CAPTURE;
+
 	pthread_mutex_lock(&mutex);
+	pthread_cond_signal(&condition);
+	pthread_cond_wait(&condition, &mutex);
+	pthread_mutex_unlock(&mutex);
 
-	if (device < 0)
-	{
-		errlogPrintf("Unable to read from device: Negative handle\r\n");
-		pthread_mutex_unlock(&mutex);
-		return -1;
-	}
-	if (!buffer)
-	{
-		errlogPrintf("Unable to read from device: NULL pointer to buffer\r\n");
-		pthread_mutex_unlock(&mutex);
-		return -1;
-	}
+	return 0;
+}
 
-	printf("Acquiring image from %s @ %s...\r\n", configurations[device].name, configurations[device].ip);
+long
+basler_setExposure(basler_t device, uint32_t exposure)
+{
+	configurations[device].exposure		=	exposure;
+	configurations[device].opcode		=	OPCODE_SET_EXPOSURE;
 
-	Pylon::PylonAutoInitTerm autoInitTerm;
+	pthread_mutex_lock(&mutex);
+	pthread_cond_signal(&condition);
+	pthread_cond_wait(&condition, &mutex);
+	pthread_mutex_unlock(&mutex);
 
-	// Create and open an instant camera object with the specific camera device.
-	CTlFactory& TlFactory = CTlFactory::GetInstance();
-	CBaslerGigEDeviceInfo di; 
-	di.SetIpAddress(configurations[device].ip);
-	IPylonDevice* dev = TlFactory.CreateDevice(di);
-	CBaslerGigECamera camera(dev);
+	return 0;
+}
+
+long
+basler_getExposure(basler_t device, uint32_t* exposure)
+{
+	configurations[device].opcode		=	OPCODE_GET_EXPOSURE;
+
+	pthread_mutex_lock(&mutex);
+	pthread_cond_signal(&condition);
+	pthread_cond_wait(&condition, &mutex);
+
+	*exposure	=	configurations[device].exposure;
+	pthread_mutex_unlock(&mutex);
+
+	return 0;
+}
+
+void*
+thread(void* arg)
+{
+	configuration_t*		configuration	=	(configuration_t*)arg;
+	PylonAutoInitTerm 		autoInitTerm;
+	CTlFactory&				TlFactory		= 	CTlFactory::GetInstance();
+	CBaslerGigEDeviceInfo	di; 
+	di.SetIpAddress(configuration->ip);
+	IPylonDevice*			dev 			= 	TlFactory.CreateDevice(di);
+	CBaslerGigECamera		camera(dev);
+
 	camera.Open();
 	
 	camera.PixelFormat.SetValue(PixelFormat_Mono8);
@@ -127,62 +173,65 @@ basler_read(basler_t device, uint8_t *buffer, uint32_t length)
 	camera.TriggerSource.SetValue(TriggerSource_Line1);
 	camera.TriggerActivation.SetValue(TriggerActivation_RisingEdge);
 
-	//camera.ExposureMode.SetValue(ExposureMode_Timed);
-	//camera.ExposureTimeAbs.SetValue(800000);
+	while (true)
+	{
+		pthread_mutex_lock(&mutex);
+		pthread_cond_wait(&condition, &mutex);
 
-	// Create an image buffer
-	const size_t ImageSize = (size_t)(camera.PayloadSize.GetValue());
-	uint8_t * const pBuffer = new uint8_t[ ImageSize ];
+		switch (configuration->opcode)
+		{
+			case OPCODE_CAPTURE:
+				capture(&camera, configuration->imageBuffer, configuration->imageSize);
+				break;
+			case OPCODE_SET_EXPOSURE:
+				setExposure(&camera, configuration->exposure);
+				break;
+			case OPCODE_GET_EXPOSURE:
+				getExposure(&camera, &configuration->exposure);
+				break;
+		}
 
+		pthread_cond_signal(&condition);
+		pthread_mutex_unlock(&mutex);
+	}
+
+	camera.Close();
+
+	return NULL;
+}
+
+static void
+capture(CBaslerGigECamera* camera, uint8_t* imageBuffer, uint32_t imageSize)
+{
 	// Get and open the first stream grabber object of the selected camera
-	CBaslerGigECamera::StreamGrabber_t StreamGrabber(camera.GetStreamGrabber(0));
+	CBaslerGigECamera::StreamGrabber_t StreamGrabber(camera->GetStreamGrabber(0));
 	StreamGrabber.Open();
 
 	// We won't use image buffers greater than ImageSize
-	StreamGrabber.MaxBufferSize.SetValue(ImageSize);
+	StreamGrabber.MaxBufferSize.SetValue(imageSize);
 
 	// We won't queue more than one image buffer at a time
 	StreamGrabber.MaxNumBuffer.SetValue(1);
 
-	// Allocate all resources for grabbing. Critical parameters like image
-	// size now must not be changed until FinishGrab() is called.
 	StreamGrabber.PrepareGrab();
-
-	// Buffers used for grabbing must be registered at the stream grabber.
-	// The registration returns a handle to be used for queuing the buffer.
-	const StreamBufferHandle hBuffer = StreamGrabber.RegisterBuffer(pBuffer, ImageSize);
-
-	// Put the buffer into the grab queue for grabbing
+	const StreamBufferHandle hBuffer = StreamGrabber.RegisterBuffer(imageBuffer, imageSize);
 	StreamGrabber.QueueBuffer(hBuffer, NULL);
 
-	// Let the camera acquire one single image ( Acquisiton mode equals SingleFrame! )
-	camera.AcquisitionStart.Execute();
-
-	/*
-	camera.TriggerSelector.SetValue(TriggerSelector_FrameStart);
-	camera.TriggerSoftware.Execute();
-	*/
+	camera->AcquisitionStart.Execute();
 
 	if (StreamGrabber.GetWaitObject().Wait(5000))
 	{
-		// Get the grab result from the grabber's result queue
 		GrabResult Result;
 		StreamGrabber.RetrieveResult(Result);
 
 		if (Result.Succeeded())
 		{
-			// Grabbing was successful, process image
 			cout << "Image acquired..." << endl;
 			cout << "Size: " << Result.GetSizeX() << " x " << Result.GetSizeY() << endl;
-
-			// Get the pointer to the image buffer
-			for (uint32_t i = 0; i < length; i++)
-				buffer[i] = ((uint8_t *)Result.Buffer())[i];
-			cout << "Gray value of first pixel: " << (uint32_t) buffer[0] << endl << endl;
+			cout << "Gray value of first pixel: " << (uint32_t) imageBuffer[0] << endl << endl;
 		}
 		else
 		{
-			// Error handling
 			cerr << "No image acquired!" << endl;
 			cerr << "Error code : 0x" << hex
 			<< Result.GetErrorCode() << endl;
@@ -203,26 +252,24 @@ basler_read(basler_t device, uint8_t *buffer, uint32_t length)
 		for (GrabResult r; StreamGrabber.RetrieveResult(r););
 	}
 
-	// Clean up
-
-	// You must deregister the buffers before freeing the memory
 	StreamGrabber.DeregisterBuffer(hBuffer);
-
-	// Free all resources used for grabbing
 	StreamGrabber.FinishGrab();
-
-	// Close stream grabber
 	StreamGrabber.Close();
-
-	// Close camera
-	camera.Close();
-
-	// Free memory of image buffer
-	delete[] pBuffer;
-
-	pthread_mutex_unlock(&mutex);
-	return 0;
 }
+
+static void
+setExposure(CBaslerGigECamera* camera, uint32_t exposure)
+{
+	camera->ExposureMode.SetValue(ExposureMode_Timed);
+	camera->ExposureTimeAbs.SetValue(exposure);
+}
+
+static void
+getExposure(CBaslerGigECamera* camera, uint32_t* exposure)
+{
+	*exposure	=	camera->ExposureTimeAbs.GetValue();
+}
+
 
 static long
 report(int detail)
