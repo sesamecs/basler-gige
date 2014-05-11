@@ -131,11 +131,6 @@ readRecord(waveformRecord *record)
 		errlogPrintf("Unable to read %s: Null array pointer\r\n", record->name);
 		return -1;
 	}
-	if (strcmp(private->command, "capture") != 0)
-	{
-		errlogPrintf("Unable to read %s: Invalid command\r\n", record->name);
-		return -1;
-	}
 
 	/*
 	 * Start IO
@@ -161,6 +156,7 @@ readRecord(waveformRecord *record)
 	record->val		=	record->bptr;
 	record->pact	=	false;
 
+#if 1
 	/*Create file*/
 	fd	=	open("image.pgm", O_CREAT | O_RDWR);
 	if (fd < 0)
@@ -175,6 +171,7 @@ readRecord(waveformRecord *record)
 		perror("write");
 	/*Close file*/
 	close(fd);
+#endif
 
 	return 0;
 }
@@ -189,7 +186,7 @@ thread(void* arg)
 	/*Detach thread*/
 	pthread_detach(pthread_self());
 
-	status	=	basler_capture(private->device, record->bptr, record->nelm);
+	status	=	basler_getImage(private->device, record->bptr, record->nelm);
 	if (status < 0)
 	{
 		errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);

@@ -9,9 +9,12 @@ extern "C" {
 	typedef	int	basler_t;
 
 	basler_t	basler_open(char *name);
-	long 		basler_capture(basler_t device, uint8_t *imageBuffer, uint32_t imageSize);
+	long 		basler_getImage(basler_t device, uint8_t *imageBuffer, uint32_t imageSize);
 	long		basler_setExposure(basler_t device, uint32_t exposure);
 	long		basler_getExposure(basler_t device, uint32_t *exposure);
+	long		basler_getImageWidth(basler_t device, uint32_t *imageWidth);
+	long		basler_getImageHeight(basler_t device, uint32_t *imageHeight);
+	long		basler_getImageSize(basler_t device, uint32_t *imageSize);
 #ifdef __cplusplus
 }
 #endif

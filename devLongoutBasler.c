@@ -24,7 +24,6 @@
 #define NUMBER_OF_OUTPUTS	10
 #define NAME_LENGTH			10
 #define COMMAND_LENGTH		20
-#define VALUE_LENGTH		10
 
 typedef struct
 {
@@ -55,7 +54,7 @@ init(int after)
 static long 
 initRecord(longoutRecord *record)
 {
-	char	*parameters;
+	char*	parameters;
 	int		nameLength;
 
 	if (outputCount == NUMBER_OF_OUTPUTS)
@@ -156,28 +155,33 @@ writeRecord(longoutRecord *record)
 	/*
 	 * This is the second pass, complete the request and return
 	 */
-
 	record->pact	=	false;
-
 	printf("Wrote %s.VAL=%d\r\n", record->name, record->val);
-
 	return 0;
 }
 
 void*
 thread(void* arg)
 {
-	int				status;
+	int					status;
 	longoutRecord*		record	=	(longoutRecord*)arg;
-	output_t*		private	=	(output_t*)record->dpvt;
+	output_t*			private	=	(output_t*)record->dpvt;
 
 	/*Detach thread*/
 	pthread_detach(pthread_self());
 
-	status	=	basler_setExposure(private->device, record->val);
-	if (status < 0)
+	if (strcmp(private->command, "setExposure") == 0)
 	{
-		errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
+		status	=	basler_setExposure(private->device, record->val);
+		if (status < 0)
+		{
+			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
+			return NULL;
+		}
+	}
+	else
+	{
+		errlogPrintf("Unable to write %s: Do not know how to process \"%s\" requested by %s\r\n", private->command, record->name);
 		return NULL;
 	}
 

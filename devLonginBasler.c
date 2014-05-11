@@ -24,7 +24,6 @@
 #define NUMBER_OF_INPUTS	10
 #define NAME_LENGTH			10
 #define COMMAND_LENGTH		20
-#define VALUE_LENGTH		10
 
 typedef struct
 {
@@ -55,7 +54,7 @@ init(int after)
 static long 
 initRecord(longinRecord *record)
 {
-	char	*parameters;
+	char*	parameters;
 	int		nameLength;
 
 	if (inputCount == NUMBER_OF_INPUTS)
@@ -104,7 +103,6 @@ initRecord(longinRecord *record)
 		errlogPrintf("Unable to initalize %s: Could not open device\r\n", record->name);
 		return -1;
 	}
-
 	record->dpvt				=	&inputs[inputCount];
 	inputCount++;
 
@@ -155,9 +153,10 @@ readRecord(longinRecord *record)
 
 	/*
 	 * This is the second pass, complete the request and return
+	 * Set UDF to false if VAL has been updated
 	 */
-
 	record->pact	=	false;
+	record->udf		=	false;
 
 	printf("%s.VAL=%u\r\n", record->name, record->val);
 
@@ -174,10 +173,45 @@ thread(void* arg)
 	/*Detach thread*/
 	pthread_detach(pthread_self());
 
-	status	=	basler_getExposure(private->device, (uint32_t*)&record->val);
-	if (status < 0)
+	if (strcmp(private->command, "getExposure") == 0)
 	{
-		errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
+		status	=	basler_getExposure(private->device, (uint32_t*)&record->val);
+		if (status < 0)
+		{
+			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
+			return NULL;
+		}
+	}
+	else if (strcmp(private->command, "getImageWidth") == 0)
+	{
+		status	=	basler_getImageWidth(private->device, (uint32_t*)&record->val);
+		if (status < 0)
+		{
+			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
+			return NULL;
+		}
+	}
+	else if (strcmp(private->command, "getImageHeight") == 0)
+	{
+		status	=	basler_getImageHeight(private->device, (uint32_t*)&record->val);
+		if (status < 0)
+		{
+			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
+			return NULL;
+		}
+	}
+	else if (strcmp(private->command, "getImageSize") == 0)
+	{
+		status	=	basler_getImageSize(private->device, (uint32_t*)&record->val);
+		if (status < 0)
+		{
+			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
+			return NULL;
+		}
+	}
+	else
+	{
+		errlogPrintf("Unable to read %s: Do not know how to process \"%s\" requested by %s\r\n", private->command, record->name);
 		return NULL;
 	}
 

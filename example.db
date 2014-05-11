@@ -7,20 +7,47 @@ record(waveform,"TL1-DI-CAM1:getImage")
 {
 	field(DESC,	"Captures a single frame")
 	field(DTYP, "basler")
-	field(INP,  "@C1:capture")
+	field(INP,  "@C1:getImage")
 	field(FTVL, "UCHAR")
 	field(NELM, "1251936")
+	field(PINI, "YES")
+}
+
+record(longin, "TL1-DI-CAM1:getImageSize")
+{
+	field(DESC, "Reads image size")
+	field(DTYP, "basler")
+	field(INP,  "@C1:getImageSize")
+	field(PINI, "YES")
+}
+
+record(longin, "TL1-DI-CAM1:getImageWidth")
+{
+	field(DESC, "Reads image width")
+	field(DTYP, "basler")
+	field(INP,  "@C1:getImageWidth")
+	field(PINI, "YES")
+}
+
+record(longin, "TL1-DI-CAM1:getImageHeight")
+{
+	field(DESC, "Reads image height")
+	field(DTYP, "basler")
+	field(INP,  "@C1:getImageHeight")
+	field(PINI, "YES")
 }
 
 record(longin, "TL1-DI-CAM1:getExposure")
 {
-	field(SCAN, "5 second")
+	field(DESC, "Reads exposure time")
 	field(DTYP, "basler")
 	field(INP,  "@C1:getExposure")
+	field(PINI, "YES")
 }
 
 record(longout, "TL1-DI-CAM1:setExposure")
 {
+	field(DESC, "Writes exposure time")
 	field(DTYP, "basler")
 	field(OUT,  "@C1:setExposure")
 }
