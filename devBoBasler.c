@@ -15,7 +15,7 @@
 #include <errlog.h>
 #include <dbAccess.h>
 #include <recSup.h>
-#include <longoutRecord.h>
+#include <boRecord.h>
 
 /*Application includes*/
 #include "drvBasler.h"
@@ -38,8 +38,8 @@ static	int			outputCount;
 
 /*Function prototypes*/
 static	long	init(int after);
-static	long	initRecord(longoutRecord *record);
-static 	long	writeRecord(longoutRecord *record);
+static	long	initRecord(boRecord *record);
+static 	long	writeRecord(boRecord *record);
 static	void*	thread(void* arg);
 
 /*Function definitions*/
@@ -52,7 +52,7 @@ init(int after)
 }
 
 static long 
-initRecord(longoutRecord *record)
+initRecord(boRecord *record)
 {
 	char*	parameters;
 	int		nameLength;
@@ -105,13 +105,14 @@ initRecord(longoutRecord *record)
 	}
 
 	record->dpvt	=	&outputs[outputCount];
+	record->mask	=	1;
 	outputCount++;
 
 	return 0;
 }
 
 static long 
-writeRecord(longoutRecord *record)
+writeRecord(boRecord *record)
 {
 	int			status;
 	pthread_t	handle;
@@ -156,50 +157,23 @@ writeRecord(longoutRecord *record)
 	 * This is the second pass, complete the request and return
 	 */
 	record->pact	=	false;
-	printf("Wrote %s.VAL=%d\r\n", record->name, record->val);
+	printf("Wrote %s.RVAL=%d\r\n", record->name, record->rval);
 	return 0;
 }
 
 void*
 thread(void* arg)
 {
-	int					status;
-	longoutRecord*		record	=	(longoutRecord*)arg;
-	output_t*			private	=	(output_t*)record->dpvt;
+	int			status;
+	boRecord*	record	=	(boRecord*)arg;
+	output_t*	private	=	(output_t*)record->dpvt;
 
 	/*Detach thread*/
 	pthread_detach(pthread_self());
 
-	if (strcmp(private->command, "setGain") == 0)
+	if (strcmp(private->command, "setTriggerSource") == 0)
 	{
-		status	=	basler_setGain(private->device, record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
-			return NULL;
-		}
-	}
-	else if (strcmp(private->command, "setExposure") == 0)
-	{
-		status	=	basler_setExposure(private->device, record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
-			return NULL;
-		}
-	}
-	else if (strcmp(private->command, "setWidth") == 0)
-	{
-		status	=	basler_setWidth(private->device, record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
-			return NULL;
-		}
-	}
-	else if (strcmp(private->command, "setHeight") == 0)
-	{
-		status	=	basler_setHeight(private->device, record->val);
+		status	=	basler_setTriggerSource(private->device, record->rval);
 		if (status < 0)
 		{
 			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
@@ -227,7 +201,7 @@ struct devsup {
     DEVSUPFUN init_record;
     DEVSUPFUN get_ioint_info;
     DEVSUPFUN io;
-} devLongoutBasler =
+} devBoBasler =
 {
     5,
     NULL,
@@ -236,4 +210,4 @@ struct devsup {
     NULL,
     writeRecord,
 };
-epicsExportAddress(dset, devLongoutBasler);
+epicsExportAddress(dset, devBoBasler);

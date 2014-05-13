@@ -12,9 +12,12 @@ LDFLAGS			+=	-L$(PYLON_ROOT)/lib -L$(GENICAM_ROOT_V2_3)/bin/Linux32_i86 -L$(GENI
 LIBRARY_IOC		=	basler
 basler_SRCS		+=	basler_registerRecordDeviceDriver.cpp
 basler_SRCS		+= 	drvBasler.cpp
-basler_SRCS		+=	devWaveformBasler.c
+basler_SRCS		+=	devBiBasler.c
+basler_SRCS		+=	devBoBasler.c
 basler_SRCS		+=	devLonginBasler.c
 basler_SRCS		+=	devLongoutBasler.c
+basler_SRCS		+=	devAoBasler.c
+basler_SRCS		+=	devWaveformBasler.c
 basler_LIBS		+= 	$(EPICS_BASE_IOC_LIBS)
 INSTALL_DBDS	+= 	$(INSTALL_DBD)/basler.dbd
 
@@ -27,5 +30,6 @@ baslerApp_LIBS	+=	$(EPICS_BASE_IOC_LIBS)
 baslerApp_DBD	+=	base.dbd
 baslerApp_DBD	+=	basler.dbd
 DBD				+=	baslerApp.dbd
+DB				+=	basler.db
 
 include $(TOP)/configure/RULES

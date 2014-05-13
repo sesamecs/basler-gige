@@ -156,7 +156,7 @@ readRecord(waveformRecord *record)
 	record->val		=	record->bptr;
 	record->pact	=	false;
 
-#if 1
+#if 0
 	/*Create file*/
 	fd	=	open("image.pgm", O_CREAT | O_RDWR);
 	if (fd < 0)

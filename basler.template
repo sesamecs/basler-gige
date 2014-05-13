@@ -1,0 +1,105 @@
+#
+# Example database
+#
+
+record(waveform,"$(DEVICE):getImage")
+{
+	field(DESC,	"Captures a single frame")
+	field(SCAN, "5 second")
+	field(DTYP, "basler")
+	field(INP,  "@$(CAMERA):getImage")
+	field(FTVL, "UCHAR")
+	field(NELM, "307200")
+	#field(NELM, "1251936")
+	#field(PINI, "YES")
+}
+
+record(longin, "$(DEVICE):getSize")
+{
+	field(DESC, "Reads image size")
+	field(DTYP, "basler")
+	field(INP,  "@$(CAMERA):getSize")
+	field(PINI, "YES")
+}
+
+record(longout, "$(DEVICE):setWidth")
+{
+	field(DESC, "Writes width")
+	field(DTYP, "basler")
+	field(OUT,  "@$(CAMERA):setWidth")
+}
+
+record(longin, "$(DEVICE):getWidth")
+{
+	field(DESC, "Reads image width")
+	field(DTYP, "basler")
+	field(INP,  "@$(CAMERA):getWidth")
+	field(PINI, "YES")
+}
+
+record(longout, "$(DEVICE):setHeight")
+{
+	field(DESC, "Writes image height")
+	field(DTYP, "basler")
+	field(OUT,  "@$(CAMERA):setHeight")
+}
+
+record(longin, "$(DEVICE):getHeight")
+{
+	field(DESC, "Reads image height")
+	field(DTYP, "basler")
+	field(INP,  "@$(CAMERA):getHeight")
+	field(PINI, "YES")
+}
+
+record(longout, "$(DEVICE):setGain")
+{
+	field(DESC, "Writes gain")
+	field(DTYP, "basler")
+	field(OUT,  "@$(CAMERA):setGain")
+}
+
+record(longin, "$(DEVICE):getGain")
+{
+	field(DESC, "Reads gain")
+	field(DTYP, "basler")
+	field(INP,  "@$(CAMERA):getGain")
+	field(PINI, "YES")
+}
+
+record(longout, "$(DEVICE):setExposure")
+{
+	field(DESC, "Writes exposure time")
+	field(DTYP, "basler")
+	field(OUT,  "@$(CAMERA):setExposure")
+}
+
+record(longin, "$(DEVICE):getExposure")
+{
+	field(DESC, "Reads exposure time")
+	field(DTYP, "basler")
+	field(INP,  "@$(CAMERA):getExposure")
+	field(PINI, "YES")
+}
+
+record(bo, "$(DEVICE):setTriggerSource")
+{
+	field(DESC, "Writes trigger source")
+	field(DTYP, "basler")
+	field(OUT,  "@$(CAMERA):setTriggerSource")
+
+	field(ZNAM, "SOFTWARE")
+	field(ONAM, "HARDWARE")
+}
+
+record(bi, "$(DEVICE):getTriggerSource")
+{
+	field(DESC, "Reads trigger source")
+	field(DTYP, "basler")
+	field(INP,  "@$(CAMERA):getTriggerSource")
+	field(PINI, "YES")
+
+	field(ZNAM, "SOFTWARE")
+	field(ONAM, "HARDWARE")
+}
+

@@ -15,7 +15,7 @@
 #include <errlog.h>
 #include <dbAccess.h>
 #include <recSup.h>
-#include <longinRecord.h>
+#include <biRecord.h>
 
 /*Application includes*/
 #include "drvBasler.h"
@@ -38,8 +38,8 @@ static	int		inputCount;
 
 /*Function prototypes*/
 static	long	init(int after);
-static	long	initRecord(longinRecord *record);
-static 	long	readRecord(longinRecord *record);
+static	long	initRecord(biRecord *record);
+static 	long	readRecord(biRecord *record);
 static	void*	thread(void* arg);
 
 /*Function definitions*/
@@ -52,7 +52,7 @@ init(int after)
 }
 
 static long 
-initRecord(longinRecord *record)
+initRecord(biRecord *record)
 {
 	char*	parameters;
 	int		nameLength;
@@ -110,7 +110,7 @@ initRecord(longinRecord *record)
 }
 
 static long 
-readRecord(longinRecord *record)
+readRecord(biRecord *record)
 {
 	int			status;
 	pthread_t	handle;
@@ -167,51 +167,15 @@ void*
 thread(void* arg)
 {
 	int				status;
-	longinRecord*	record	=	(longinRecord*)arg;
+	biRecord*	record	=	(biRecord*)arg;
 	input_t*		private	=	(input_t*)record->dpvt;
 
 	/*Detach thread*/
 	pthread_detach(pthread_self());
 
-	if (strcmp(private->command, "getGain") == 0)
+	if (strcmp(private->command, "getTriggerSource") == 0)
 	{
-		status	=	basler_getGain(private->device, (uint32_t*)&record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
-	else if (strcmp(private->command, "getExposure") == 0)
-	{
-		status	=	basler_getExposure(private->device, (uint32_t*)&record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
-	else if (strcmp(private->command, "getWidth") == 0)
-	{
-		status	=	basler_getWidth(private->device, (uint32_t*)&record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
-	else if (strcmp(private->command, "getHeight") == 0)
-	{
-		status	=	basler_getHeight(private->device, (uint32_t*)&record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
-	else if (strcmp(private->command, "getSize") == 0)
-	{
-		status	=	basler_getSize(private->device, (uint32_t*)&record->val);
+		status	=	basler_getTriggerSource(private->device, (uint32_t*)&record->val);
 		if (status < 0)
 		{
 			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
@@ -239,7 +203,7 @@ struct devsup {
     DEVSUPFUN init_record;
     DEVSUPFUN get_ioint_info;
     DEVSUPFUN io;
-} devLonginBasler =
+} devBiBasler =
 {
     5,
     NULL,
@@ -248,4 +212,4 @@ struct devsup {
     NULL,
     readRecord
 };
-epicsExportAddress(dset, devLonginBasler);
+epicsExportAddress(dset, devBiBasler);

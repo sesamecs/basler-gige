@@ -2,8 +2,9 @@
 dbLoadDatabase O.Common/baslerApp.dbd
 baslerApp_registerRecordDeviceDriver
 
-dbLoadRecords example.db
+dbLoadRecords O.Common/basler.db
 
 baslerConfigure "C1" "10.2.1.162"
+baslerConfigure "C2" "10.2.1.161"
 
 iocInit
