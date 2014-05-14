@@ -40,13 +40,20 @@ typedef enum
 	OPCODE_GET_HEIGHT			,
 	OPCODE_GET_SIZE				,
 	OPCODE_SET_TRIGGER_SOURCE	,
-	OPCODE_GET_TRIGGER_SOURCE
+	OPCODE_GET_TRIGGER_SOURCE	,
+	OPCODE_SET_OFFSET_X			,
+	OPCODE_GET_OFFSET_X			,
+	OPCODE_SET_OFFSET_Y			,
+	OPCODE_GET_OFFSET_Y
 } opcode_t;
 
 typedef struct
 {
 	char				name	[30];
 	char				ip		[30];
+	pthread_mutex_t		hardwareMutex;	
+	pthread_mutex_t		syncMutex;
+	pthread_cond_t  	conditionSignal;
 	CBaslerGigECamera*	camera;
 	opcode_t			opcode;
 	uint8_t*			buffer;
@@ -56,6 +63,8 @@ typedef struct
 	uint32_t			height;
 	uint32_t			size;
 	triggerSource_t		triggerSource;
+	uint32_t			offsetX;
+	uint32_t			offsetY;
 } configuration_t;
 
 /*
@@ -64,10 +73,6 @@ typedef struct
 static	configuration_t			configurations[NUMBER_OF_DEVICES];
 static	int						deviceCount		=	0;
 static	PylonAutoInitTerm 		autoInitTerm;
-static	pthread_mutex_t			hardwareMutex;	
-static	pthread_mutex_t			syncMutex;
-static	pthread_cond_t  		conditionSignal;
-static	basler_t				requestingDevice;
 
 /*
  * Private function prototypes
@@ -87,6 +92,10 @@ static	void	getHeight(CBaslerGigECamera* camera, uint32_t *height);
 static	void	getSize(CBaslerGigECamera* camera, uint32_t *size);
 static	void	setTriggerSource(CBaslerGigECamera* camera, triggerSource_t source);
 static	void	getTriggerSource(CBaslerGigECamera* camera, triggerSource_t* source);
+static	void	setOffsetX(CBaslerGigECamera* camera, uint32_t offsetX);
+static	void	getOffsetX(CBaslerGigECamera* camera, uint32_t *offsetX);
+static	void	setOffsetY(CBaslerGigECamera* camera, uint32_t offsetY);
+static	void	getOffsetY(CBaslerGigECamera* camera, uint32_t *offsetY);
 
 /*
  * Function definitions
@@ -97,27 +106,32 @@ init(void)
 {
 	int			status;
 	pthread_t	handle;
+	basler_t	device;
 
-	/*Initialize sync methods*/
-	pthread_mutex_init(&hardwareMutex, NULL);
-	pthread_mutex_init(&syncMutex, NULL);
-	pthread_cond_init(&conditionSignal, NULL);
-
-	/*Lock synchronization mutex*/
-	pthread_mutex_lock(&syncMutex);
-
-	/*Start new driver thread*/
-	status	=	pthread_create(&handle, NULL, thread, NULL);	
-	if (status)
+	for (device = 0; device < deviceCount; device++)
 	{
-		errlogPrintf("Unable to initialize driver thread: Unable to create thread\r\n");
-		pthread_mutex_unlock(&syncMutex);
-		return -1;
-	}
+		/*Initialize sync methods*/
+		pthread_mutex_init(&configurations[device].hardwareMutex, NULL);
+		pthread_mutex_init(&configurations[device].syncMutex, NULL);
+		pthread_cond_init(&configurations[device].conditionSignal, NULL);
 
-	/*Wait for driver thread to initialize*/
-	pthread_cond_wait(&conditionSignal, &syncMutex);
-	pthread_mutex_unlock(&syncMutex);
+		/*Lock synchronization mutex*/
+		pthread_mutex_lock(&configurations[device].syncMutex);
+
+		/*Start new driver thread*/
+		printf("Initializing %s @ %s\r\n", configurations[device].name, configurations[device].ip);
+		status	=	pthread_create(&handle, NULL, thread, &configurations[device]);	
+		if (status)
+		{
+			errlogPrintf("Unable to initialize driver thread: Unable to create thread\r\n");
+			pthread_mutex_unlock(&configurations[device].syncMutex);
+			return -1;
+		}
+
+		/*Wait for driver thread to initialize*/
+		pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+	}
 
 	return 0;
 }
@@ -140,97 +154,99 @@ basler_open(char *deviceName)
 void*
 thread(void* arg)
 {
+	configuration_t*		configuration	=	(configuration_t*)arg;
 	CTlFactory&				TlFactory		= 	CTlFactory::GetInstance();
-	basler_t 				device;
+	CBaslerGigEDeviceInfo	di; 
+	di.SetIpAddress(configuration->ip);
+	IPylonDevice*			dev 			= 	TlFactory.CreateDevice(di);
 
-	for (device = 0; device < deviceCount; device++)
-	{
-		CBaslerGigEDeviceInfo	di; 
-		di.SetIpAddress(configurations[device].ip);
-		IPylonDevice*	dev 			= 	TlFactory.CreateDevice(di);
+	configuration->camera					=	new CBaslerGigECamera(dev);
+	configuration->camera->Open();
 
-		configurations[device].camera	=	new CBaslerGigECamera(dev);
-		configurations[device].camera->Open();
+	configuration->camera->PixelFormat.SetValue(PixelFormat_Mono8);
 
-		configurations[device].camera->PixelFormat.SetValue(PixelFormat_Mono8);
-		configurations[device].camera->OffsetX.SetValue(0);
-		configurations[device].camera->OffsetY.SetValue(0);
-		//configurations[device].camera->Width.SetValue(configurations[device].camera->Width.GetMax());
-		//configurations[device].camera->Height.SetValue(configurations[device].camera->Height.GetMax());
-		configurations[device].camera->Width.SetValue(640);
-		configurations[device].camera->Height.SetValue(480);
+	configuration->camera->AcquisitionMode.SetValue(AcquisitionMode_SingleFrame);
 
-		configurations[device].camera->AcquisitionMode.SetValue(AcquisitionMode_SingleFrame);
-
-		configurations[device].camera->TriggerSelector.SetValue(TriggerSelector_AcquisitionStart);
-		configurations[device].camera->TriggerMode.SetValue(TriggerMode_Off);
-		configurations[device].camera->TriggerSelector.SetValue(TriggerSelector_FrameStart);
-		configurations[device].camera->TriggerMode.SetValue(TriggerMode_On);
-		configurations[device].camera->TriggerSource.SetValue(TriggerSource_Software);
-		configurations[device].triggerSource	=	TRIGGER_SOURCE_SOFTWARE;
-	}
+	configuration->camera->TriggerSelector.SetValue(TriggerSelector_AcquisitionStart);
+	configuration->camera->TriggerMode.SetValue(TriggerMode_Off);
+	configuration->camera->TriggerSelector.SetValue(TriggerSelector_FrameStart);
+	configuration->camera->TriggerMode.SetValue(TriggerMode_On);
+	configuration->camera->TriggerSource.SetValue(TriggerSource_Software);
+	configuration->triggerSource	=	TRIGGER_SOURCE_SOFTWARE;
 
 	/*Inform init() that driver thread has initialized*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_lock(&configuration->syncMutex);
+	pthread_cond_signal(&configuration->conditionSignal);
+	pthread_mutex_unlock(&configuration->syncMutex);
 
 	while (true) 
 	{ 
 		/*Wait for command*/
-		pthread_mutex_lock(&syncMutex);
-		pthread_cond_wait(&conditionSignal, &syncMutex);
+		pthread_mutex_lock(&configuration->syncMutex);
+		pthread_cond_wait(&configuration->conditionSignal, &configuration->syncMutex);
 
-		printf("Processing opcode=%d\r\n", configurations[requestingDevice].opcode);
+		printf("%s: Processing opcode=%d\r\n", configuration->name, configuration->opcode);
 
 		/*Execute command*/
-		switch (configurations[requestingDevice].opcode)
+		switch (configuration->opcode)
 		{
 			case OPCODE_GET_IMAGE:
-				getImage(configurations[requestingDevice].camera, configurations[requestingDevice].triggerSource, configurations[requestingDevice].buffer, configurations[requestingDevice].size);
+				getImage(configuration->camera, configuration->triggerSource, configuration->buffer, configuration->size);
 				break;
 			case OPCODE_SET_GAIN:
-				setGain(configurations[requestingDevice].camera, configurations[requestingDevice].gain);
+				setGain(configuration->camera, configuration->gain);
 				break;
 			case OPCODE_GET_GAIN:
-				getGain(configurations[requestingDevice].camera, &configurations[requestingDevice].gain);
+				getGain(configuration->camera, &configuration->gain);
 				break;
 			case OPCODE_SET_EXPOSURE:
-				setExposure(configurations[requestingDevice].camera, configurations[requestingDevice].exposure);
+				setExposure(configuration->camera, configuration->exposure);
 				break;
 			case OPCODE_GET_EXPOSURE:
-				getExposure(configurations[requestingDevice].camera, &configurations[requestingDevice].exposure);
+				getExposure(configuration->camera, &configuration->exposure);
 				break;
 			case OPCODE_SET_WIDTH:
-				setWidth(configurations[requestingDevice].camera, configurations[requestingDevice].width);
+				setWidth(configuration->camera, configuration->width);
 				break;
 			case OPCODE_GET_WIDTH:
-				getWidth(configurations[requestingDevice].camera, &configurations[requestingDevice].width);
+				getWidth(configuration->camera, &configuration->width);
 				break;
 			case OPCODE_SET_HEIGHT:
-				setHeight(configurations[requestingDevice].camera, configurations[requestingDevice].height);
+				setHeight(configuration->camera, configuration->height);
 				break;
 			case OPCODE_GET_HEIGHT:
-				getHeight(configurations[requestingDevice].camera, &configurations[requestingDevice].height);
+				getHeight(configuration->camera, &configuration->height);
+				break;
+			case OPCODE_SET_OFFSET_X:
+				setOffsetX(configuration->camera, configuration->offsetX);
+				break;
+			case OPCODE_GET_OFFSET_X:
+				getOffsetX(configuration->camera, &configuration->offsetX);
+				break;
+			case OPCODE_SET_OFFSET_Y:
+				setOffsetY(configuration->camera, configuration->offsetY);
+				break;
+			case OPCODE_GET_OFFSET_Y:
+				getOffsetY(configuration->camera, &configuration->offsetY);
 				break;
 			case OPCODE_GET_SIZE:
-				getSize(configurations[requestingDevice].camera, &configurations[requestingDevice].size);
+				getSize(configuration->camera, &configuration->size);
 				break;
 			case OPCODE_SET_TRIGGER_SOURCE:
-				setTriggerSource(configurations[requestingDevice].camera, configurations[requestingDevice].triggerSource);
+				setTriggerSource(configuration->camera, configuration->triggerSource);
 				break;
 			case OPCODE_GET_TRIGGER_SOURCE:
-				getTriggerSource(configurations[requestingDevice].camera, &configurations[requestingDevice].triggerSource);
+				getTriggerSource(configuration->camera, &configuration->triggerSource);
 				break;
 		}
 
-		printf("Finished processing opcode=%d\r\n", configurations[requestingDevice].opcode);
+		printf("%s: Finished processing opcode=%d\r\n", configuration->name, configuration->opcode);
 
-		pthread_cond_signal(&conditionSignal);
-		pthread_mutex_unlock(&syncMutex);
+		pthread_cond_signal(&configuration->conditionSignal);
+		pthread_mutex_unlock(&configuration->syncMutex);
 	}
 
-	configurations[device].camera->Close();
+	configuration->camera->Close();
 	return NULL;
 }
 
@@ -238,21 +254,20 @@ long
 basler_getImage(basler_t device, uint8_t *buffer, uint32_t size)
 {
 	/*Lock camera*/
-	pthread_mutex_lock(&hardwareMutex);
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
 	configurations[device].buffer	=	buffer;
 	configurations[device].size		=	size;
 	configurations[device].opcode	=	OPCODE_GET_IMAGE;
-	requestingDevice				=	device;
 
 	/*Synchronize*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_cond_wait(&conditionSignal, &syncMutex);
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
-	pthread_mutex_unlock(&hardwareMutex);
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
 
 	return 0;
 }
@@ -261,20 +276,19 @@ long
 basler_setGain(basler_t device, uint32_t gain)
 {
 	/*Lock camera*/
-	pthread_mutex_lock(&hardwareMutex);
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
 	configurations[device].gain		=	gain;
 	configurations[device].opcode	=	OPCODE_SET_GAIN;
-	requestingDevice				=	device;
 
 	/*Synchronize*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_cond_wait(&conditionSignal, &syncMutex);
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
-	pthread_mutex_unlock(&hardwareMutex);
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
 
 	return 0;
 }
@@ -283,21 +297,20 @@ long
 basler_getGain(basler_t device, uint32_t* gain)
 {
 	/*Lock camera*/
-	pthread_mutex_lock(&hardwareMutex);
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
 	configurations[device].opcode	=	OPCODE_GET_GAIN;
-	requestingDevice				=	device;
 
 	/*Synchronize*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_cond_wait(&conditionSignal, &syncMutex);
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 
 	*gain	=	configurations[device].gain;
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
-	pthread_mutex_unlock(&hardwareMutex);
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
 
 	return 0;
 }
@@ -306,20 +319,19 @@ long
 basler_setExposure(basler_t device, uint32_t exposure)
 {
 	/*Lock camera*/
-	pthread_mutex_lock(&hardwareMutex);
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
 	configurations[device].exposure	=	exposure;
 	configurations[device].opcode	=	OPCODE_SET_EXPOSURE;
-	requestingDevice				=	device;
 
 	/*Synchronize*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_cond_wait(&conditionSignal, &syncMutex);
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
-	pthread_mutex_unlock(&hardwareMutex);
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
 
 	return 0;
 }
@@ -328,21 +340,20 @@ long
 basler_getExposure(basler_t device, uint32_t* exposure)
 {
 	/*Lock camera*/
-	pthread_mutex_lock(&hardwareMutex);
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
 	configurations[device].opcode	=	OPCODE_GET_EXPOSURE;
-	requestingDevice				=	device;
 
 	/*Synchronize*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_cond_wait(&conditionSignal, &syncMutex);
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 
 	*exposure	=	configurations[device].exposure;
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
-	pthread_mutex_unlock(&hardwareMutex);
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
 
 	return 0;
 }
@@ -351,20 +362,19 @@ long
 basler_setWidth(basler_t device, uint32_t width)
 {
 	/*Lock camera*/
-	pthread_mutex_lock(&hardwareMutex);
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
 	configurations[device].width	=	width;
 	configurations[device].opcode	=	OPCODE_SET_WIDTH;
-	requestingDevice				=	device;
 
 	/*Synchronize*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_cond_wait(&conditionSignal, &syncMutex);
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
-	pthread_mutex_unlock(&hardwareMutex);
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
 
 	return 0;
 }
@@ -373,21 +383,20 @@ long
 basler_getWidth(basler_t device, uint32_t* width)
 {
 	/*Lock camera*/
-	pthread_mutex_lock(&hardwareMutex);
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
 	configurations[device].opcode	=	OPCODE_GET_WIDTH;
-	requestingDevice				=	device;
 
 	/*Synchronize*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_cond_wait(&conditionSignal, &syncMutex);
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 
 	*width	=	configurations[device].width;
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
-	pthread_mutex_unlock(&hardwareMutex);
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
 
 	return 0;
 }
@@ -396,20 +405,19 @@ long
 basler_setHeight(basler_t device, uint32_t height)
 {
 	/*Lock camera*/
-	pthread_mutex_lock(&hardwareMutex);
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
 	configurations[device].height	=	height;
 	configurations[device].opcode	=	OPCODE_SET_HEIGHT;
-	requestingDevice				=	device;
 
 	/*Synchronize*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_cond_wait(&conditionSignal, &syncMutex);
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
-	pthread_mutex_unlock(&hardwareMutex);
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
 
 	return 0;
 }
@@ -418,44 +426,127 @@ long
 basler_getHeight(basler_t device, uint32_t* height)
 {
 	/*Lock camera*/
-	pthread_mutex_lock(&hardwareMutex);
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
 	configurations[device].opcode	=	OPCODE_GET_HEIGHT;
-	requestingDevice				=	device;
 
 	/*Synchronize*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_cond_wait(&conditionSignal, &syncMutex);
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 
 	*height	=	configurations[device].height;
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
-	pthread_mutex_unlock(&hardwareMutex);
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
 
 	return 0;
 }
 
 long
+basler_setOffsetX(basler_t device, uint32_t offsetX)
+{
+	/*Lock camera*/
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
+
+	configurations[device].offsetX	=	offsetX;
+	configurations[device].opcode	=	OPCODE_SET_OFFSET_X;
+
+	/*Synchronize*/
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
+
+	/*Unlock camera*/
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
+
+	return 0;
+}
+
+long
+basler_getOffsetX(basler_t device, uint32_t* offsetX)
+{
+	/*Lock camera*/
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
+
+	configurations[device].opcode	=	OPCODE_GET_OFFSET_X;
+
+	/*Synchronize*/
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+
+	*offsetX	=	configurations[device].offsetX;
+	pthread_mutex_unlock(&configurations[device].syncMutex);
+
+	/*Unlock camera*/
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
+
+	return 0;
+}
+
+long
+basler_setOffsetY(basler_t device, uint32_t offsetY)
+{
+	/*Lock camera*/
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
+
+	configurations[device].offsetY	=	offsetY;
+	configurations[device].opcode	=	OPCODE_SET_OFFSET_Y;
+
+	/*Synchronize*/
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
+
+	/*Unlock camera*/
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
+
+	return 0;
+}
+
+long
+basler_getOffsetY(basler_t device, uint32_t* offsetY)
+{
+	/*Lock camera*/
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
+
+	configurations[device].opcode	=	OPCODE_GET_OFFSET_Y;
+
+	/*Synchronize*/
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+
+	*offsetY	=	configurations[device].offsetY;
+	pthread_mutex_unlock(&configurations[device].syncMutex);
+
+	/*Unlock camera*/
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
+
+	return 0;
+}
+long
 basler_getSize(basler_t device, uint32_t* size)
 {
 	/*Lock camera*/
-	pthread_mutex_lock(&hardwareMutex);
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
 	configurations[device].opcode	=	OPCODE_GET_SIZE;
-	requestingDevice				=	device;
 
 	/*Synchronize*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_cond_wait(&conditionSignal, &syncMutex);
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 
 	*size	=	configurations[device].size;
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
-	pthread_mutex_unlock(&hardwareMutex);
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
 
 	return 0;
 }
@@ -464,20 +555,19 @@ long
 basler_setTriggerSource(basler_t device, triggerSource_t source)
 {
 	/*Lock camera*/
-	pthread_mutex_lock(&hardwareMutex);
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
 	configurations[device].triggerSource	=	source;
 	configurations[device].opcode			=	OPCODE_SET_TRIGGER_SOURCE;
-	requestingDevice						=	device;
 
 	/*Synchronize*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_cond_wait(&conditionSignal, &syncMutex);
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
-	pthread_mutex_unlock(&hardwareMutex);
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
 
 	return 0;
 }
@@ -486,21 +576,20 @@ long
 basler_getTriggerSource(basler_t device, triggerSource_t* source)
 {
 	/*Lock camera*/
-	pthread_mutex_lock(&hardwareMutex);
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
 	configurations[device].opcode	=	OPCODE_GET_TRIGGER_SOURCE;
-	requestingDevice				=	device;
 
 	/*Synchronize*/
-	pthread_mutex_lock(&syncMutex);
-	pthread_cond_signal(&conditionSignal);
-	pthread_cond_wait(&conditionSignal, &syncMutex);
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 
 	*source	=	configurations[device].triggerSource;
-	pthread_mutex_unlock(&syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
-	pthread_mutex_unlock(&hardwareMutex);
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
 
 	return 0;
 }
@@ -616,6 +705,30 @@ static void
 getHeight(CBaslerGigECamera* camera, uint32_t* height)
 {
 	*height	=	camera->Height.GetValue();
+}
+
+static void
+setOffsetX(CBaslerGigECamera* camera, uint32_t offsetX)
+{
+	camera->OffsetX.SetValue(offsetX);
+}
+
+static void
+getOffsetX(CBaslerGigECamera* camera, uint32_t* offsetX)
+{
+	*offsetX	=	camera->OffsetX.GetValue();
+}
+
+static void
+setOffsetY(CBaslerGigECamera* camera, uint32_t offsetY)
+{
+	camera->OffsetY.SetValue(offsetY);
+}
+
+static void
+getOffsetY(CBaslerGigECamera* camera, uint32_t* offsetY)
+{
+	*offsetY	=	camera->OffsetY.GetValue();
 }
 
 static void

@@ -21,7 +21,7 @@
 #include "drvBasler.h"
 
 /*Macros*/
-#define NUMBER_OF_INPUTS	10
+#define NUMBER_OF_INPUTS	100
 #define NAME_LENGTH			10
 #define COMMAND_LENGTH		20
 

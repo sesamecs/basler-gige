@@ -21,7 +21,7 @@
 #include "drvBasler.h"
 
 /*Macros*/
-#define NUMBER_OF_INPUTS	10
+#define NUMBER_OF_INPUTS	100
 #define NAME_LENGTH			10
 #define COMMAND_LENGTH		20
 
@@ -33,8 +33,8 @@ typedef struct
 } input_t;
 
 /*Local variables*/
-static	input_t	inputs[NUMBER_OF_INPUTS];
-static	int		inputCount;
+static	input_t			inputs[NUMBER_OF_INPUTS];
+static	int				inputCount;
 
 /*Function prototypes*/
 static	long	init(int after);
@@ -115,6 +115,7 @@ readRecord(longinRecord *record)
 	int			status;
 	pthread_t	handle;
 	input_t*	private	=	(input_t*)record->dpvt;
+
 
 	if (!record)
 	{
@@ -203,6 +204,24 @@ thread(void* arg)
 	else if (strcmp(private->command, "getHeight") == 0)
 	{
 		status	=	basler_getHeight(private->device, (uint32_t*)&record->val);
+		if (status < 0)
+		{
+			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
+			return NULL;
+		}
+	}
+	else if (strcmp(private->command, "getOffsetX") == 0)
+	{
+		status	=	basler_getOffsetX(private->device, (uint32_t*)&record->val);
+		if (status < 0)
+		{
+			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
+			return NULL;
+		}
+	}
+	else if (strcmp(private->command, "getOffsetY") == 0)
+	{
+		status	=	basler_getOffsetY(private->device, (uint32_t*)&record->val);
 		if (status < 0)
 		{
 			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);

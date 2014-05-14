@@ -16,7 +16,6 @@ basler_SRCS		+=	devBiBasler.c
 basler_SRCS		+=	devBoBasler.c
 basler_SRCS		+=	devLonginBasler.c
 basler_SRCS		+=	devLongoutBasler.c
-basler_SRCS		+=	devAoBasler.c
 basler_SRCS		+=	devWaveformBasler.c
 basler_LIBS		+= 	$(EPICS_BASE_IOC_LIBS)
 INSTALL_DBDS	+= 	$(INSTALL_DBD)/basler.dbd

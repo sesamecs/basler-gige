@@ -26,6 +26,10 @@ extern "C" {
 	long		basler_getSize(basler_t device, uint32_t *imageSize);
 	long		basler_setTriggerSource(basler_t device, triggerSource_t source);
 	long		basler_getTriggerSource(basler_t device, triggerSource_t* source);
+	long		basler_setOffsetX(basler_t device, uint32_t offsetX);
+	long		basler_getOffsetX(basler_t device, uint32_t *offsetX);
+	long		basler_setOffsetY(basler_t device, uint32_t offsetY);
+	long		basler_getOffsetY(basler_t device, uint32_t *offsetY);
 #ifdef __cplusplus
 }
 #endif

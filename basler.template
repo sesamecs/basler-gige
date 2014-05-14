@@ -9,9 +9,7 @@ record(waveform,"$(DEVICE):getImage")
 	field(DTYP, "basler")
 	field(INP,  "@$(CAMERA):getImage")
 	field(FTVL, "UCHAR")
-	field(NELM, "307200")
-	#field(NELM, "1251936")
-	#field(PINI, "YES")
+	field(NELM, "1251936")
 }
 
 record(longin, "$(DEVICE):getSize")
@@ -64,6 +62,36 @@ record(longin, "$(DEVICE):getGain")
 	field(DESC, "Reads gain")
 	field(DTYP, "basler")
 	field(INP,  "@$(CAMERA):getGain")
+	field(PINI, "YES")
+}
+
+record(longout, "$(DEVICE):setOffsetX")
+{
+	field(DESC, "Writes offsetX")
+	field(DTYP, "basler")
+	field(OUT,  "@$(CAMERA):setOffsetX")
+}
+
+record(longin, "$(DEVICE):getOffsetX")
+{
+	field(DESC, "Reads offsetX")
+	field(DTYP, "basler")
+	field(INP,  "@$(CAMERA):getOffsetX")
+	field(PINI, "YES")
+}
+
+record(longout, "$(DEVICE):setOffsetY")
+{
+	field(DESC, "Writes offsetY")
+	field(DTYP, "basler")
+	field(OUT,  "@$(CAMERA):setOffsetY")
+}
+
+record(longin, "$(DEVICE):getOffsetY")
+{
+	field(DESC, "Reads offsetY")
+	field(DTYP, "basler")
+	field(INP,  "@$(CAMERA):getOffsetY")
 	field(PINI, "YES")
 }
 

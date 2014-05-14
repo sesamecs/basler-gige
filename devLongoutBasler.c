@@ -21,7 +21,7 @@
 #include "drvBasler.h"
 
 /*Macros*/
-#define NUMBER_OF_OUTPUTS	10
+#define NUMBER_OF_OUTPUTS	100
 #define NAME_LENGTH			10
 #define COMMAND_LENGTH		20
 
@@ -200,6 +200,24 @@ thread(void* arg)
 	else if (strcmp(private->command, "setHeight") == 0)
 	{
 		status	=	basler_setHeight(private->device, record->val);
+		if (status < 0)
+		{
+			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
+			return NULL;
+		}
+	}
+	else if (strcmp(private->command, "setOffsetX") == 0)
+	{
+		status	=	basler_setOffsetX(private->device, record->val);
+		if (status < 0)
+		{
+			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
+			return NULL;
+		}
+	}
+	else if (strcmp(private->command, "setOffsetY") == 0)
+	{
+		status	=	basler_setOffsetY(private->device, record->val);
 		if (status < 0)
 		{
 			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);

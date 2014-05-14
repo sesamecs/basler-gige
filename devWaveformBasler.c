@@ -21,7 +21,7 @@
 #include "drvBasler.h"
 
 /*Macros*/
-#define NUMBER_OF_INPUTS	10
+#define NUMBER_OF_INPUTS	100
 #define NAME_LENGTH			10
 #define COMMAND_LENGTH		20
 
@@ -33,8 +33,8 @@ typedef struct
 } input_t;
 
 /*Local variables*/
-static	input_t	inputs[NUMBER_OF_INPUTS];
-static	int		inputCount;
+static	input_t			inputs[NUMBER_OF_INPUTS];
+static	int				inputCount;
 
 /*Function prototypes*/
 static	long			init(int after);
@@ -116,6 +116,7 @@ readRecord(waveformRecord *record)
 	pthread_t	handle;
 	input_t*	private	=	(input_t*)record->dpvt;
 
+
 	if (!record)
 	{
 		errlogPrintf("Unable to read %s: Null record pointer\r\n", record->name);
@@ -152,8 +153,6 @@ readRecord(waveformRecord *record)
 	/*
 	 * This is the second pass, complete the request and return
 	 */
-	record->nord	=	record->nelm;
-	record->val		=	record->bptr;
 	record->pact	=	false;
 
 #if 0
@@ -180,18 +179,28 @@ void*
 thread(void* arg)
 {
 	int				status;
+	uint32_t		size;
 	waveformRecord*	record	=	(waveformRecord*)arg;
 	input_t*		private	=	(input_t*)record->dpvt;
 
 	/*Detach thread*/
 	pthread_detach(pthread_self());
 
-	status	=	basler_getImage(private->device, record->bptr, record->nelm);
+	status	=	basler_getSize(private->device, &size);
 	if (status < 0)
 	{
 		errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
 		return NULL;
 	}
+	status	=	basler_getImage(private->device, record->bptr, size);
+	if (status < 0)
+	{
+		errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
+		return NULL;
+	}
+
+	record->nord	=	size;
+	record->val		=	record->bptr;
 
 	/*Process record*/
 	dbScanLock((struct dbCommon*)record);
