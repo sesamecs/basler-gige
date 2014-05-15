@@ -55,6 +55,7 @@ typedef struct
 	pthread_mutex_t		syncMutex;
 	pthread_cond_t  	conditionSignal;
 	CBaslerGigECamera*	camera;
+	CBaslerGigECamera::StreamGrabber_t* 	streamGrabber;
 	opcode_t			opcode;
 	uint8_t*			buffer;
 	uint32_t			gain;
@@ -80,7 +81,7 @@ static	PylonAutoInitTerm 		autoInitTerm;
 static	long	init(void);
 static	long	report(int detail);
 static	void* 	thread(void* arg);
-static	void	getImage(CBaslerGigECamera* camera, uint32_t source, uint8_t *image, uint32_t imageSize);
+static	void	getImage(configuration_t* configuration);
 static	void	setGain(CBaslerGigECamera* camera, uint32_t gain);
 static	void	getGain(CBaslerGigECamera* camera, uint32_t *gain);
 static	void	setExposure(CBaslerGigECamera* camera, uint32_t exposure);
@@ -164,6 +165,9 @@ thread(void* arg)
 	configuration->camera->Open();
 
 	configuration->camera->PixelFormat.SetValue(PixelFormat_Mono8);
+	configuration->camera->GevSCPSPacketSize.SetValue(1500);
+	configuration->camera->GevSCPD.SetValue(0);
+	configuration->camera->GevSCFTD.SetValue(0);
 
 	configuration->camera->AcquisitionMode.SetValue(AcquisitionMode_SingleFrame);
 
@@ -173,6 +177,9 @@ thread(void* arg)
 	configuration->camera->TriggerMode.SetValue(TriggerMode_On);
 	configuration->camera->TriggerSource.SetValue(TriggerSource_Software);
 	configuration->triggerSource	=	TRIGGER_SOURCE_SOFTWARE;
+
+	configuration->streamGrabber	=	new CBaslerGigECamera::StreamGrabber_t(configuration->camera->GetStreamGrabber(0));
+	configuration->streamGrabber->Open();
 
 	/*Inform init() that driver thread has initialized*/
 	pthread_mutex_lock(&configuration->syncMutex);
@@ -191,7 +198,7 @@ thread(void* arg)
 		switch (configuration->opcode)
 		{
 			case OPCODE_GET_IMAGE:
-				getImage(configuration->camera, configuration->triggerSource, configuration->buffer, configuration->size);
+				getImage(configuration);
 				break;
 			case OPCODE_SET_GAIN:
 				setGain(configuration->camera, configuration->gain);
@@ -596,36 +603,29 @@ basler_getTriggerSource(basler_t device, triggerSource_t* source)
 
 
 static void
-getImage(CBaslerGigECamera* camera, uint32_t source, uint8_t* buffer, uint32_t size)
+getImage(configuration_t* configuration)
 {
-	// Get and open the first stream grabber object of the selected camera
-	CBaslerGigECamera::StreamGrabber_t StreamGrabber(camera->GetStreamGrabber(0));
-	StreamGrabber.Open();
+	configuration->streamGrabber->MaxBufferSize.SetValue(configuration->size);
+	configuration->streamGrabber->MaxNumBuffer.SetValue(1);
 
-	// We won't use image buffers greater than ImageSize
-	StreamGrabber.MaxBufferSize.SetValue(size);
+	configuration->streamGrabber->PrepareGrab();
+	const StreamBufferHandle hBuffer = configuration->streamGrabber->RegisterBuffer(configuration->buffer, configuration->size);
+	configuration->streamGrabber->QueueBuffer(hBuffer, NULL);
 
-	// We won't queue more than one image buffer at a time
-	StreamGrabber.MaxNumBuffer.SetValue(1);
+	configuration->camera->AcquisitionStart.Execute();
+	if (configuration->triggerSource == TRIGGER_SOURCE_SOFTWARE)
+		configuration->camera->TriggerSoftware.Execute();
 
-	StreamGrabber.PrepareGrab();
-	const StreamBufferHandle hBuffer = StreamGrabber.RegisterBuffer(buffer, size);
-	StreamGrabber.QueueBuffer(hBuffer, NULL);
-
-	camera->AcquisitionStart.Execute();
-	if (source == 0)
-		camera->TriggerSoftware.Execute();
-
-	if (StreamGrabber.GetWaitObject().Wait(3000))
+	if (configuration->streamGrabber->GetWaitObject().Wait(3000))
 	{
 		GrabResult Result;
-		StreamGrabber.RetrieveResult(Result);
+		configuration->streamGrabber->RetrieveResult(Result);
 
 		if (Result.Succeeded())
 		{
 			cout << "Image acquired..." << endl;
 			cout << "Size: " << Result.GetSizeX() << " x " << Result.GetSizeY() << endl;
-			cout << "Gray value of first pixel: " << (uint32_t) buffer[0] << endl;
+			cout << "Gray value of first pixel: " << (uint32_t) configuration->buffer[0] << endl;
 		}
 		else
 		{
@@ -643,15 +643,14 @@ getImage(CBaslerGigECamera* camera, uint32_t source, uint8_t* buffer, uint32_t s
 
 		// Get the pending buffer back (You are not allowed to deregister
 		// buffers when they are still queued)
-		StreamGrabber.CancelGrab();
+		configuration->streamGrabber->CancelGrab();
 
 		// Get all buffers back
-		for (GrabResult r; StreamGrabber.RetrieveResult(r););
+		for (GrabResult r; configuration->streamGrabber->RetrieveResult(r););
 	}
 
-	StreamGrabber.DeregisterBuffer(hBuffer);
-	StreamGrabber.FinishGrab();
-	StreamGrabber.Close();
+	configuration->streamGrabber->DeregisterBuffer(hBuffer);
+	configuration->streamGrabber->FinishGrab();
 }
 
 static void

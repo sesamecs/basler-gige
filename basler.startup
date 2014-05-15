@@ -5,6 +5,5 @@ baslerApp_registerRecordDeviceDriver
 dbLoadRecords O.Common/basler.db
 
 baslerConfigure "C1" "10.2.1.162"
-baslerConfigure "C2" "10.2.1.161"
 
 iocInit

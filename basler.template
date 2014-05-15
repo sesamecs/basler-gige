@@ -5,11 +5,14 @@
 record(waveform,"$(DEVICE):getImage")
 {
 	field(DESC,	"Captures a single frame")
-	field(SCAN, "5 second")
+	field(SCAN, ".1 second")
 	field(DTYP, "basler")
 	field(INP,  "@$(CAMERA):getImage")
 	field(FTVL, "UCHAR")
 	field(NELM, "1251936")
+
+	field(DISA, "1")
+	field(DISV, "1")
 }
 
 record(longin, "$(DEVICE):getSize")

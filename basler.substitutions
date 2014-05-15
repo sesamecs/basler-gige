@@ -1,3 +1,2 @@
 pattern	{	DEVICE			CAMERA	}
 		{	TL1-DI-CAM1		C1		}
-		{	BOC03-DI-CAM1	C2		}
