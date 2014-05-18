@@ -156,9 +156,8 @@ readRecord(biRecord *record)
 	 * Set UDF to false if VAL has been updated
 	 */
 	record->pact	=	false;
-	record->udf		=	false;
 
-	printf("%s.VAL=%u\r\n", record->name, record->val);
+	printf("%s.RVAL=%u\r\n", record->name, record->rval);
 
 	return 0;
 }
@@ -167,7 +166,7 @@ void*
 thread(void* arg)
 {
 	int				status;
-	biRecord*	record	=	(biRecord*)arg;
+	biRecord*		record	=	(biRecord*)arg;
 	input_t*		private	=	(input_t*)record->dpvt;
 
 	/*Detach thread*/
@@ -175,7 +174,7 @@ thread(void* arg)
 
 	if (strcmp(private->command, "getTriggerSource") == 0)
 	{
-		status	=	basler_getTriggerSource(private->device, (uint32_t*)&record->val);
+		status	=	basler_getTriggerSource(private->device, (uint32_t*)&record->rval);
 		if (status < 0)
 		{
 			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);

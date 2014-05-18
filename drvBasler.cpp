@@ -371,6 +371,13 @@ basler_setWidth(basler_t device, uint32_t width)
 	/*Lock camera*/
 	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
+	if ((width + configurations[device].offsetX) > 1296)
+	{
+		printf("Bad width/offsetX configuration\r\n");
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
+
 	configurations[device].width	=	width;
 	configurations[device].opcode	=	OPCODE_SET_WIDTH;
 
@@ -413,6 +420,13 @@ basler_setHeight(basler_t device, uint32_t height)
 {
 	/*Lock camera*/
 	pthread_mutex_lock(&configurations[device].hardwareMutex);
+
+	if ((height + configurations[device].offsetY) > 966)
+	{
+		printf("Bad height/offsetY configuration\r\n");
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 
 	configurations[device].height	=	height;
 	configurations[device].opcode	=	OPCODE_SET_HEIGHT;
@@ -457,6 +471,13 @@ basler_setOffsetX(basler_t device, uint32_t offsetX)
 	/*Lock camera*/
 	pthread_mutex_lock(&configurations[device].hardwareMutex);
 
+	if ((offsetX + configurations[device].width) > 1296)
+	{
+		printf("Bad width/offsetX configuration\r\n");
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
+
 	configurations[device].offsetX	=	offsetX;
 	configurations[device].opcode	=	OPCODE_SET_OFFSET_X;
 
@@ -499,6 +520,13 @@ basler_setOffsetY(basler_t device, uint32_t offsetY)
 {
 	/*Lock camera*/
 	pthread_mutex_lock(&configurations[device].hardwareMutex);
+
+	if ((offsetY + configurations[device].height) > 966)
+	{
+		printf("Bad height/offsetY configuration\r\n");
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 
 	configurations[device].offsetY	=	offsetY;
 	configurations[device].opcode	=	OPCODE_SET_OFFSET_Y;
