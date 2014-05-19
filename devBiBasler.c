@@ -22,8 +22,8 @@
 
 /*Macros*/
 #define NUMBER_OF_INPUTS	100
-#define NAME_LENGTH			10
-#define COMMAND_LENGTH		20
+#define NAME_LENGTH			100
+#define COMMAND_LENGTH		100
 
 typedef struct
 {
@@ -142,6 +142,7 @@ readRecord(biRecord *record)
 	if(!record->pact)
 	{
 		status	=	pthread_create(&handle, NULL, thread, (void*)record);	
+		printf("devBiBasler: created thread\r\n");
 		if (status)
 		{
 			errlogPrintf("Unable to read %s: Unable to create thread\r\n", record->name);
@@ -175,6 +176,7 @@ thread(void* arg)
 	if (strcmp(private->command, "getTriggerSource") == 0)
 	{
 		status	=	basler_getTriggerSource(private->device, (uint32_t*)&record->rval);
+		printf("devBiBasler: ran command\r\n");
 		if (status < 0)
 		{
 			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);

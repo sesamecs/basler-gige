@@ -22,8 +22,8 @@
 
 /*Macros*/
 #define NUMBER_OF_INPUTS	100
-#define NAME_LENGTH			10
-#define COMMAND_LENGTH		20
+#define NAME_LENGTH			100
+#define COMMAND_LENGTH		100
 
 typedef struct
 {

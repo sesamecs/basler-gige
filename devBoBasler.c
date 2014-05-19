@@ -21,9 +21,9 @@
 #include "drvBasler.h"
 
 /*Macros*/
-#define NUMBER_OF_OUTPUTS	10
-#define NAME_LENGTH			10
-#define COMMAND_LENGTH		20
+#define NUMBER_OF_OUTPUTS	100
+#define NAME_LENGTH			100
+#define COMMAND_LENGTH		100
 
 typedef struct
 {
