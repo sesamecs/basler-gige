@@ -184,12 +184,10 @@ thread(void* arg)
 	/*Inform init() that driver thread has initialized*/
 	pthread_mutex_lock(&configuration->syncMutex);
 	pthread_cond_signal(&configuration->conditionSignal);
-	pthread_mutex_unlock(&configuration->syncMutex);
 
 	while (true) 
 	{ 
 		/*Wait for command*/
-		pthread_mutex_lock(&configuration->syncMutex);
 		pthread_cond_wait(&configuration->conditionSignal, &configuration->syncMutex);
 
 		printf("%s: Processing opcode=%d\r\n", configuration->name, configuration->opcode);
@@ -250,7 +248,6 @@ thread(void* arg)
 		printf("%s: Finished processing opcode=%d\r\n", configuration->name, configuration->opcode);
 
 		pthread_cond_signal(&configuration->conditionSignal);
-		pthread_mutex_unlock(&configuration->syncMutex);
 	}
 
 	configuration->camera->Close();
