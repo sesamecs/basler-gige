@@ -15,6 +15,8 @@ extern "C" {
 
 	basler_t	basler_open(char *name);
 	long 		basler_getImage(basler_t device, uint8_t *imageBuffer, uint32_t imageSize);
+	long		basler_setGainAuto(basler_t device, bool gainAuto);
+	long		basler_getGainAuto(basler_t device, bool* gainAuto);
 	long		basler_setGain(basler_t device, uint32_t gain);
 	long		basler_getGain(basler_t device, uint32_t* gain);
 	long		basler_setExposure(basler_t device, uint32_t exposure);

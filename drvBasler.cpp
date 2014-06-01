@@ -30,6 +30,8 @@ using namespace Pylon;
 typedef enum
 {
 	OPCODE_GET_IMAGE			,
+	OPCODE_SET_GAIN_AUTO		,
+	OPCODE_GET_GAIN_AUTO		,
 	OPCODE_SET_GAIN				,
 	OPCODE_GET_GAIN				,
 	OPCODE_SET_EXPOSURE			,
@@ -58,6 +60,7 @@ typedef struct
 	CBaslerGigECamera::StreamGrabber_t* 	streamGrabber;
 	opcode_t			opcode;
 	uint8_t*			buffer;
+	bool				gainAuto;
 	uint32_t			gain;
 	uint32_t			exposure;
 	uint32_t			width;
@@ -82,6 +85,8 @@ static	long	init(void);
 static	long	report(int detail);
 static	void* 	thread(void* arg);
 static	void	getImage(configuration_t* configuration);
+static	void	setGainAuto(CBaslerGigECamera* camera, bool gainAuto);
+static	void	getGainAuto(CBaslerGigECamera* camera, bool *gainAuto);
 static	void	setGain(CBaslerGigECamera* camera, uint32_t gain);
 static	void	getGain(CBaslerGigECamera* camera, uint32_t *gain);
 static	void	setExposure(CBaslerGigECamera* camera, uint32_t exposure);
@@ -177,6 +182,10 @@ thread(void* arg)
 	configuration->camera->TriggerMode.SetValue(TriggerMode_On);
 	configuration->camera->TriggerSource.SetValue(TriggerSource_Software);
 	configuration->triggerSource	=	TRIGGER_SOURCE_SOFTWARE;
+	configuration->camera->TriggerDelayAbs.SetValue(0);
+
+	configuration->camera->GainAuto.SetValue(GainAuto_Continuous);
+	configuration->camera->gainAuto	=	true;
 
 	configuration->streamGrabber	=	new CBaslerGigECamera::StreamGrabber_t(configuration->camera->GetStreamGrabber(0));
 	configuration->streamGrabber->Open();
@@ -197,6 +206,12 @@ thread(void* arg)
 		{
 			case OPCODE_GET_IMAGE:
 				getImage(configuration);
+				break;
+			case OPCODE_SET_GAIN_AUTO:
+				setGainAuto(configuration->camera, configuration->gainAuto);
+				break;
+			case OPCODE_GET_GAIN_AUTO:
+				getGainAuto(configuration->camera, &configuration->gainAuto);
 				break;
 			case OPCODE_SET_GAIN:
 				setGain(configuration->camera, configuration->gain);
@@ -276,6 +291,48 @@ basler_getImage(basler_t device, uint8_t *buffer, uint32_t size)
 	return 0;
 }
 
+long
+basler_setGainAuto(basler_t device, bool gainAuto)
+{
+	/*Lock camera*/
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
+
+	configurations[device].gainAuto	=	gainAuto;
+	configurations[device].opcode	=	OPCODE_SET_GAIN_AUTO;
+
+	/*Synchronize*/
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	pthread_mutex_unlock(&configurations[device].syncMutex);
+
+	/*Unlock camera*/
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
+
+	return 0;
+}
+
+long
+basler_getGainAuto(basler_t device, bool* gainAuto)
+{
+	/*Lock camera*/
+	pthread_mutex_lock(&configurations[device].hardwareMutex);
+
+	configurations[device].opcode	=	OPCODE_GET_GAIN_AUTO;
+
+	/*Synchronize*/
+	pthread_mutex_lock(&configurations[device].syncMutex);
+	pthread_cond_signal(&configurations[device].conditionSignal);
+	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+
+	*gainAuto	=	configurations[device].gainAuto;
+	pthread_mutex_unlock(&configurations[device].syncMutex);
+
+	/*Unlock camera*/
+	pthread_mutex_unlock(&configurations[device].hardwareMutex);
+
+	return 0;
+}
 long
 basler_setGain(basler_t device, uint32_t gain)
 {
@@ -679,10 +736,37 @@ getImage(configuration_t* configuration)
 }
 
 static void
+setGainAuto(CBaslerGigECamera* camera, bool gainAuto)
+{
+	if (gainAuto)
+		camera->GainAuto.SetValue(GainAuto_Continuous);
+	else
+		camera->GainAuto.SetValue(GainAuto_Off);
+}
+
+static void
+getGainAuto(CBaslerGigECamera* camera, bool* gainAuto)
+{
+	int gainAutoEnum;
+
+	gainAutoEnum	=	camera->GainAuto.GetValue();
+	if (gainAutoEnum == GainAuto_Off)
+		*gainAuto	=	false;
+	else
+		*gainAuto	=	true;
+}
+
+static void
 setGain(CBaslerGigECamera* camera, uint32_t gain)
 {
-	camera->GainSelector.SetValue(GainSelector_All);
-	camera->GainRaw.SetValue(gain);
+	int	gainAutoEnum;
+
+	gainAutoEnum	=	camera->GainAuto.GetValue();
+	if (gainAutoEnum == GainAuto_Off)
+	{
+		camera->GainSelector.SetValue(GainSelector_All);
+		camera->GainRaw.SetValue(gain);
+	}
 }
 
 static void

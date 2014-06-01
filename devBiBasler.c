@@ -181,6 +181,15 @@ thread(void* arg)
 			return NULL;
 		}
 	}
+	else if (strcmp(private->command, "getGainAuto") == 0)
+	{
+		status	=	basler_getGainAuto(private->device, (bool*)&record->rval);
+		if (status < 0)
+		{
+			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
+			return NULL;
+		}
+	}
 	else
 	{
 		errlogPrintf("Unable to read %s: Do not know how to process \"%s\" requested by %s\r\n", record->name, private->command, record->name);

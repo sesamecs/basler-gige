@@ -53,6 +53,27 @@ record(longin, "$(DEVICE):getHeight")
 	field(PINI, "YES")
 }
 
+record(bo, "$(DEVICE):setGainAuto")
+{
+	field(DESC, "Controls automatic gain")
+	field(DTYP, "basler")
+	field(OUT,  "@$(CAMERA):setGainAuto")
+
+	field(ZNAM, "OFF")
+	field(ONAM, "CONTINUOUS")
+}
+
+record(bi, "$(DEVICE):getGainAuto")
+{
+	field(DESC, "Reads automatic gain")
+	field(DTYP, "basler")
+	field(INP,  "@$(CAMERA):getGainAuto")
+	field(PINI, "YES")
+
+	field(ZNAM, "OFF")
+	field(ONAM, "CONTINUOUS")
+}
+
 record(longout, "$(DEVICE):setGain")
 {
 	field(DESC, "Writes gain")

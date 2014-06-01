@@ -180,6 +180,15 @@ thread(void* arg)
 			return NULL;
 		}
 	}
+	else if (strcmp(private->command, "setGainAuto") == 0)
+	{
+		status	=	basler_setGainAuto(private->device, record->rval);
+		if (status < 0)
+		{
+			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
+			return NULL;
+		}
+	}
 	else
 	{
 		errlogPrintf("Unable to write %s: Do not know how to process \"%s\" requested by %s\r\n", record->name, private->command, record->name);
