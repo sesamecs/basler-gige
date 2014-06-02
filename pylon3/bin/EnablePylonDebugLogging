@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# enable/disable Pylon logging via GenICam environment variable GENICAM_LOG_CONFIG_V2_3_STACK
+
+case $1 in
+  ON)
+    export GENICAM_LOG_CONFIG_V2_3_STACK=$GENICAM_LOG_CONFIG_V2_3:$GENICAM_LOG_CONFIG_V2_3_STACK
+    export GENICAM_LOG_CONFIG_V2_3=/opt/pylon3/genicam/log/config-unix/DefaultLogging.properties
+    ;;
+  OFF)
+    s=`echo $GENICAM_LOG_CONFIG_V2_3_STACK|sed 's/^\([^:]*\):\(.*\)/\1/g'`
+    echo s=#$s#
+    if test -n "$s"; then
+        export GENICAM_LOG_CONFIG_V2_3="$s"
+        GENICAM_LOG_CONFIG_V2_3_STACK=`echo $GENICAM_LOG_CONFIG_V2_3_STACK|sed 's/^\([^:]*\):\(.*\)/\2/g'`
+    fi
+    ;;
+  *)
+    echo >&2 "Usage: . EnablePylonDebugLogging ON|OFF"
+    ;;
+esac

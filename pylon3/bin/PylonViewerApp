@@ -1,0 +1,50 @@
+#! /bin/sh -e
+# this script sets up the environment for pylon executables
+#
+# determine the directory this script resides in
+this_script_full_path=`readlink -f "$0"` # Absolute path this script
+this_script_directory=`dirname "$this_script_full_path"` # the directory
+this_script_basename=`basename "$this_script_full_path"` # the filename
+
+# this script is in the $PYLON_ROOT/bin,
+# so set PYLON_ROOT to the parent of this dir
+# if you put this script into a different diretory
+# you'll need to modify the "${this_script_directory}/.." accordigly.
+
+# Note: using readlink so the relative path will be converted to an absolute
+export PYLON_ROOT=`readlink -f "${this_script_directory}/.."`
+
+# genicam is placed below $PYLON_ROOT
+export GENICAM_ROOT_V2_3=${PYLON_ROOT}/genicam
+
+# specify a xml cache dir so device creation will be faster
+if [ -z "$GENICAM_CACHE_V2_3" ]; then
+    export GENICAM_CACHE_V2_3=${HOME}/genicam_xml_cache
+fi
+mkdir -p "${GENICAM_CACHE_V2_3}"
+
+# determine arch, sice genicam uses different directories for different architectures
+ARCH=`uname -m`
+case "$ARCH" in
+    x86_64)
+        pylonlibdir="$PYLON_ROOT/lib64:$PYLON_ROOT/genicam/bin/Linux64_x64"
+        ;;
+    arm*)
+        pylonlibdir="$PYLON_ROOT/lib:$PYLON_ROOT/genicam/bin/Linux32_ARM"
+        ;;
+    *)
+        pylonlibdir="$PYLON_ROOT/lib:$PYLON_ROOT/genicam/bin/Linux32_i86"
+        ;;
+esac
+
+
+# this is needed for run applications using pylon SDK
+export LD_LIBRARY_PATH=${pylonlibdir}:${LD_LIBRARY_PATH}
+
+# the next statement is only needed to run the
+# supplied GUI applications (PylonViewerApp, IpConfigurator, SpeedOMeter)
+export LD_LIBRARY_PATH=${PYLON_ROOT}/bin:${LD_LIBRARY_PATH}
+
+# now the environment is set up
+# start the actual binary which has the same name like this script but "." (dot) prepended to the basename
+"${this_script_directory}/.${this_script_basename}" "$@"
