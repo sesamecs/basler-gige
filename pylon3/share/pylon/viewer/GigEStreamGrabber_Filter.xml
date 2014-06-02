@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Filter>
+  <Feature>
+    <Name>Root</Name>
+    <Visibility>Guru</Visibility>
+  </Feature>
+  <Feature>
+    <Name>MaxNumBuffer</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <Feature>
+    <Name>MaxBufferSize</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+<!--  <Feature>
+    <Name>EnableResend</Name>
+    <Visibility>Guru</Visibility>
+  </Feature>
+  <Feature>
+    <Name>PacketTimeout</Name>
+    <Visibility>Guru</Visibility>
+  </Feature>
+  <Feature>
+    <Name>FrameRetention</Name>
+    <Visibility>Guru</Visibility>
+  </Feature> -->
+
+
+</Filter>

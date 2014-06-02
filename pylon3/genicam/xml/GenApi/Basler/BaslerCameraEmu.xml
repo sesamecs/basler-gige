@@ -1,0 +1,584 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RegisterDescription xmlns="http://www.genicam.org/GenApi/Version_1_0"
+                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                     ModelName="BaslerCamEmu"
+                     VendorName="Basler"
+                     ToolTip="Basler Cam Emu interface"
+                     SchemaMajorVersion="1"
+                     SchemaMinorVersion="0"
+                     SchemaSubMinorVersion="1"
+                     StandardNameSpace="None"
+                     MajorVersion="1"
+                     MinorVersion="0"
+                     SubMinorVersion="0"
+                     ProductGuid="B97DE549-CB9A-44f8-937D-64C48BDECFA3"
+                     VersionGuid="A2DCDE14-73E4-408a-AFA8-81852ECB5D9A"
+                     xsi:schemaLocation="http://www.genicam.org/GenApi/Version_1_0 ../GenApiSchema_Version_1_0.xsd">
+    <Category Name="Root" NameSpace="Standard">
+        <pFeature>AnalogControls</pFeature>
+        <pFeature>ImageFormat</pFeature>
+        <pFeature>AOI</pFeature>
+        <pFeature>AcquisitionTrigger</pFeature>
+        <!-- <pFeature>DigitalIO</pFeature> -->
+        <!-- <pFeature>TimerControls</pFeature> -->
+        <!-- <pFeature>LUTControls</pFeature> -->
+        <pFeature>DeviceInformation</pFeature>
+        <!-- <pFeature>ChunkDataStreams</pFeature> -->
+        <!-- <pFeature>ChunkData</pFeature> -->
+        <!-- <pFeature>EventsGeneration</pFeature> -->
+        <!-- <pFeature>UserSets</pFeature> -->
+        <pFeature>TransportLayer</pFeature>
+        <!-- <pFeature>FileAccess</pFeature> -->
+    </Category>
+          
+    <Category Name="AnalogControls" NameSpace="Standard">
+        <ToolTip>This category includes items that control the analog characteristics of the video signal</ToolTip>
+        <Description>This category includes items that control the analog characteristics of the video signal..</Description>
+        <DisplayName>Analog Controls</DisplayName>
+        <pFeature>GainRaw</pFeature>
+    </Category>
+    
+    <Integer Name="GainRaw" NameSpace="Standard">
+        <ToolTip>This is an integer value that sets the selected gain control in device specific units</ToolTip>
+        <Description>Sets the 'raw' value of the selected gain control. The 'raw' value is an integer value that sets the selected gain control in units specific to the camera.</Description>
+        <DisplayName>Gain (Raw)</DisplayName>
+        <!-- <pIsImplemented>GainRaw_InqPresenceFao</pIsImplemented> -->
+        <Streamable>Yes</Streamable>
+        <Value>192</Value>
+        <Min>192</Min>
+        <Max>1023</Max>
+        <Representation>Linear</Representation>
+    </Integer>
+  
+    <Category Name="ImageFormat" NameSpace="Standard">
+        <ToolTip>This category includes items that control the size of the acquired image and the format of the transferred pixel data</ToolTip>
+        <Description>This category includes items that control the size of the acquired image and the format of the transferred pixel data</Description>
+        <DisplayName>Image Format Controls</DisplayName>
+        <pFeature>PixelFormat</pFeature>
+        <pFeature>PixelSize</pFeature>
+        <pFeature>PixelDynamicRangeMin</pFeature>
+        <pFeature>PixelDynamicRangeMax</pFeature>
+        <pFeature>TestImageSelector</pFeature>
+        <pFeature>ImageFilename</pFeature>
+    </Category>
+  
+    <Enumeration Name="PixelFormat" NameSpace="Standard">
+        <ToolTip>Sets the format of the pixel data transmitted for acquired images</ToolTip>
+        <Description>This enumeration sets the format of the pixel data transmitted for acquired images. </Description>
+        <DisplayName>Pixel Format</DisplayName>
+        <pIsLocked>TLParamsLocked</pIsLocked>
+        <Streamable>Yes</Streamable>
+        <EnumEntry Name="Mono8" NameSpace="Standard">
+          <ToolTip>Sets the pixel format to Mono 8</ToolTip>
+          <Description>This enumeration value sets the pixel format to Mono 8.</Description>
+          <DisplayName>Mono 8</DisplayName>
+          <Value>0x01080001</Value>
+        </EnumEntry>
+    		<EnumEntry Name="Mono16" NameSpace="Standard">
+    			<ToolTip>Sets the pixel format to Mono 16</ToolTip>
+    			<Description>This enumeration value sets the pixel format to Mono 16.</Description>
+    			<DisplayName>Mono 16</DisplayName>
+    			<Value>17825799</Value>
+    		</EnumEntry>
+    		<EnumEntry Name="BGRA8Packed" NameSpace="Standard">
+    			<ToolTip>Sets the pixel format to BGRA 8 Packed</ToolTip>
+    			<Description>This enumeration value sets the pixel format to BGRA 8 Packed.</Description>
+    			<DisplayName>BGRA 8 Packed</DisplayName>
+    			<Value>35651607</Value>
+    		</EnumEntry>
+    		<EnumEntry Name="BGR8Packed" NameSpace="Standard">
+    			<ToolTip>Sets the pixel format to BGR 8 Packed</ToolTip>
+    			<Description>This enumeration value sets the pixel format to BGR 8 Packed.</Description>
+    			<DisplayName>BGR 8 Packed</DisplayName>
+    			<Value>35127317</Value>
+    		</EnumEntry>
+        <EnumEntry Name="RGB8Packed" NameSpace="Standard">
+          <ToolTip>Sets the pixel format to Mono 8</ToolTip>
+          <Description>This enumeration value sets the pixel format to Mono RGB8.</Description>
+          <DisplayName>RGB8 Packed</DisplayName>
+          <Value>0x02180014</Value>
+        </EnumEntry>
+    		<EnumEntry Name="RGB16Packed" NameSpace="Standard">
+    			<ToolTip>Sets the pixel format to RGB 16 Packed</ToolTip>
+    			<Description>This enumeration value sets the pixel format to RGB 16 Packed.</Description>
+    			<DisplayName>RGB 16 Packed</DisplayName>
+    			<Value>36700211</Value>
+    		</EnumEntry>
+      <Value>0x01080001</Value>
+    </Enumeration>
+
+  <Enumeration Name="PixelSize" NameSpace="Standard">
+    <ToolTip>Indicates the depth of the pixel values in the image in bits per pixel</ToolTip>
+    <Description>This is a read only feature. This enumeration provides a list of values that indicate the depth of the pixel values in the acquired images in bits per pixel. This value will always be coherent with the pixel format setting.</Description>
+    <DisplayName>Pixel Size</DisplayName>
+    <EnumEntry Name="Bpp8" NameSpace="Standard">
+      <ToolTip>Indicates that the depth of the pixel values in the acquired images is 8 bits per pixel</ToolTip>
+      <Description>This enumeration value indicates that the depth of the pixel values in the acquired images is 8 bits per pixel.</Description>
+      <DisplayName>8 Bits/Pixel</DisplayName>
+      <Value>8</Value>
+    </EnumEntry>
+    <EnumEntry Name="Bpp10" NameSpace="Standard">
+      <ToolTip>Indicates that the depth of the pixel values in the acquired images is 10 bits per pixel</ToolTip>
+      <Description>This enumeration value indicates that the depth of the pixel values in the acquired images is 10 bits per pixel.</Description>
+      <DisplayName>10 Bits/Pixel</DisplayName>
+      <Value>10</Value>
+    </EnumEntry>
+    <EnumEntry Name="Bpp12" NameSpace="Standard">
+      <ToolTip>Indicates that the depth of the pixel values in the acquired images is 12 bits per pixel</ToolTip>
+      <Description>This enumeration value indicates that the depth of the pixel values in the acquired images is 12 bits per pixel.</Description>
+      <DisplayName>12 Bits/Pixel</DisplayName>
+      <Value>12</Value>
+    </EnumEntry>
+    <EnumEntry Name="Bpp16" NameSpace="Standard">
+      <ToolTip>Indicates that the depth of the pixel values in the acquired images is 16 bits per pixel</ToolTip>
+      <Description>This enumeration value indicates that the depth of the pixel values in the acquired images is 16 bits per pixel.</Description>
+      <DisplayName>16 Bits/Pixel</DisplayName>
+      <Value>16</Value>
+    </EnumEntry>
+    <EnumEntry Name="Bpp24" NameSpace="Custom">
+      <ToolTip>Indicates that the depth of the pixel values in the acquired images is 24 bits per pixel</ToolTip>
+      <Description>This enumeration value indicates that the depth of the pixel values in the acquired images is 24 bits per pixel.</Description>
+      <DisplayName>24 Bits/Pixel</DisplayName>
+      <Value>24</Value>
+    </EnumEntry>
+    <EnumEntry Name="Bpp36" NameSpace="Custom">
+      <ToolTip>Indicates that the depth of the pixel values in the acquired images is 36 bits per pixel</ToolTip>
+      <Description>This enumeration value indicates that the depth of the pixel values in the acquired images is 36 bits per pixel.</Description>
+      <DisplayName>36 Bits/Pixel</DisplayName>
+      <Value>36</Value>
+    </EnumEntry>
+    <EnumEntry Name="Bpp48" NameSpace="Standard">
+      <ToolTip>Indicates that the depth of the pixel values in the acquired images is 48 bits per pixel</ToolTip>
+      <Description>This enumeration value indicates that the depth of the pixel values in the acquired images is 48 bits per pixel.</Description>
+      <DisplayName>48 Bits/Pixel</DisplayName>
+      <Value>48</Value>
+    </EnumEntry>
+    <Value>8</Value>
+  </Enumeration>
+
+  <Integer Name="PixelDynamicRangeMin" NameSpace="Standard">
+        <ToolTip>Indicates the minimum possible pixel value that could be transferred from the camera</ToolTip>
+        <Description>This a read only feature. It indicates the minimum possible pixel value that could be transferred from the camera.</Description>
+        <DisplayName>Dynamic Range Min</DisplayName>
+        <!-- <pIsImplemented>PixelDynamicRangeMin_InqPresenceFao</pIsImplemented> -->
+        <Value>0</Value>
+        <Representation>PureNumber</Representation>
+    </Integer>
+  
+    <Integer Name="PixelDynamicRangeMax" NameSpace="Standard">
+        <ToolTip>Indicates the maximum possible pixel value that could be transferred from the camera</ToolTip>
+        <Description>This a read only feature. It indicates the maximum possible pixel value that could be transferred from the camera.</Description>
+        <DisplayName>Dynamic Range Max</DisplayName>
+        <!-- <pIsImplemented>PixelDynamicRangeMax_InqPresenceFao</pIsImplemented> -->
+        <Value>255</Value>
+        <Representation>PureNumber</Representation>
+    </Integer>
+  
+    <Enumeration Name="TestImageSelector" NameSpace="Standard">
+        <ToolTip>Selecting a test image from the list will enable the test image</ToolTip>
+        <Description>This enumeration provides a list of the available test images. Selecting a test image from the list will enable the test image.</Description>
+        <DisplayName>Test Image Selector</DisplayName>
+        <!-- <pIsImplemented>TestImageSelector_InqPresenceFao</pIsImplemented> -->
+        <Streamable>Yes</Streamable>
+        <EnumEntry Name="Off" NameSpace="Standard">
+            <ToolTip>Sets the camera's test image generation capability to disabled</ToolTip>
+            <Description>This enumeration value sets the camera's test image generation capability to disabled.</Description>
+            <DisplayName>Test Image Off</DisplayName>
+            <!-- <pIsImplemented>TestImageSelector_Off_InqPresenceFao</pIsImplemented> -->
+            <Value>0</Value>
+        </EnumEntry>
+        <EnumEntry Name="Testimage1" NameSpace="Standard">
+            <ToolTip>Sets the camera to generate and transmit test images with a test image 1 pattern</ToolTip>
+            <Description>This enumeration value sets the camera to generate and transmit test images with a test image 1 pattern.</Description>
+            <DisplayName>Test Image 1</DisplayName>
+            <!-- <pIsImplemented>TestimageTestimagecontrolinq1</pIsImplemented> -->
+            <Value>1</Value>
+        </EnumEntry>
+        <EnumEntry Name="Testimage2" NameSpace="Standard">
+            <ToolTip>Sets the camera to generate and transmit test images with a test image 2 pattern</ToolTip>
+            <Description>This enumeration value sets the camera to generate and transmit test images with a test image 2 pattern.</Description>
+            <DisplayName>Test Image 2</DisplayName>
+            <!-- <pIsImplemented>TestimageTestimagecontrolinq2</pIsImplemented> -->
+            <Value>2</Value>
+        </EnumEntry>
+        <Value>1</Value>
+    </Enumeration>
+
+    <StringReg Name="ImageFilename" NameSpace="Standard">
+        <ToolTip>Image filename</ToolTip>
+        <Description>Filename of the image to stream</Description>
+        <DisplayName>Image Filename</DisplayName>
+        <Address>0xd00f</Address>
+        <Length>1024</Length>
+        <AccessMode>RW</AccessMode>
+        <pPort>Device</pPort>
+    </StringReg>
+
+    <Integer Name="WidthMax" NameSpace="Standard">
+        <ToolTip>Indicates the maximum allowed width of the image in pixels</ToolTip>
+        <Description>This is a read only element. It is an integer that indicates maximum allowed width of the image in pixels taking into account any function that may limit the allowed width.</Description>
+        <DisplayName>Max Width</DisplayName>
+        <Value>8192</Value>
+        <Representation>PureNumber</Representation>
+    </Integer>
+    <Integer Name="HeightMax" NameSpace="Standard">
+        <ToolTip>Indicates the maximum allowed height of the image in pixels</ToolTip>
+        <Description>This is a read only element. It is an integer that indicates maximum allowed height of the image in pixels taking into account any function that may limit the allowed height.</Description>
+        <DisplayName>Max Height</DisplayName>
+        <Value>8192</Value>
+        <Representation>PureNumber</Representation>
+    </Integer>
+
+    <Category Name="AOI" NameSpace="Custom">
+        <ToolTip>This category includes items used to set the size and position of the area of interest</ToolTip>
+        <Description>This category includes items used to set the size and position of the area of interest</Description>
+        <DisplayName>AOI Controls</DisplayName>
+        <pFeature>Width</pFeature>
+        <pFeature>Height</pFeature>
+        <pFeature>OffsetX</pFeature>
+        <pFeature>OffsetY</pFeature>
+    </Category>
+  
+    <Integer Name="Width" NameSpace="Standard">
+        <ToolTip>Sets the width of the area of interest in pixels</ToolTip>
+        <Description>This value sets the width of the area of interest in pixels.</Description>
+        <DisplayName>Width</DisplayName>
+        <pIsLocked>TLParamsLocked</pIsLocked>
+        <Streamable>Yes</Streamable>
+        <Value>1024</Value>
+        <Min>1</Min>
+        <Max>4096</Max>
+        <Representation>Linear</Representation>
+    </Integer>
+    
+    <Integer Name="Height" NameSpace="Standard">
+        <ToolTip>Sets the height of the area of interest in pixels</ToolTip>
+        <Description>This value sets the height of the area of interest in pixels.</Description>
+        <DisplayName>Height</DisplayName>
+        <pIsLocked>TLParamsLocked</pIsLocked>
+        <Streamable>Yes</Streamable>
+        <Value>1040</Value>
+        <Min>1</Min>
+        <Max>4096</Max>
+        <Representation>Linear</Representation>
+    </Integer>
+  
+    <Integer Name="OffsetX" NameSpace="Standard">
+        <ToolTip>Sets the X offset (left offset) of the area of interest in pixels</ToolTip>
+        <Description>This value sets the X offset (left offset) for the area of interest in pixels, i.e., the distance in pixels between the left side of the sensor and the left side of the image area.</Description>
+        <DisplayName>X Offset</DisplayName>
+        <Streamable>Yes</Streamable>
+        <Value>0</Value>
+        <Min>0</Min>
+        <Max>0</Max>
+        <Inc>1</Inc>
+        <Representation>Linear</Representation>
+    </Integer>
+  
+    <Integer Name="OffsetY" NameSpace="Standard">
+        <ToolTip>Sets the Y offset (top offset) for the area of interest in pixels</ToolTip>
+        <Description>This value sets the Y offset (top offset) for the area of interest, i.e., the distance in pixels between the top of the sensor and the top of the image area.</Description>
+        <DisplayName>Y Offset</DisplayName>
+        <Streamable>Yes</Streamable>
+        <Value>0</Value>
+        <Min>0</Min>
+        <Max>0</Max>
+        <Inc>1</Inc>
+        <Representation>Linear</Representation>
+    </Integer>
+
+    <Category Name="AcquisitionTrigger" NameSpace="Standard">
+        <ToolTip>This category includes items used to set the image acquisition parameters and to start and stop acquisition</ToolTip>
+        <Description>This category includes items used to set the image acquisition parameters and to start and stop acquisition</Description>
+        <DisplayName>Acquisition Controls</DisplayName>
+        <pFeature>ExposureTimeAbs</pFeature>
+        <pFeature>ExposureTimeBaseAbs</pFeature>
+        <pFeature>ExposureTimeRaw</pFeature>
+        <pFeature>AcquisitionMode</pFeature>
+        <pFeature>AcquisitionStart</pFeature>
+        <pFeature>AcquisitionStop</pFeature>
+        <pFeature>TriggerSelector</pFeature>
+        <pFeature>TriggerMode</pFeature>
+        <pFeature>ExposureMode</pFeature>
+    </Category>
+  
+    <Integer Name="ExposureTimeAbs" NameSpace="Standard">
+        <ToolTip>Controls the Absolute exposure time in microseconds (us).</ToolTip>
+        <Description>Controls the Absolute exposure time in microseconds (us).</Description>
+        <DisplayName>Exposure Time (Abs)</DisplayName>
+        <!-- <pIsImplemented>GainRaw_InqPresenceFao</pIsImplemented> -->
+        <Streamable>Yes</Streamable>
+        <Value>10000</Value>
+        <Min>100</Min>
+        <Max>3000000</Max>
+        <Representation>Linear</Representation>
+    </Integer>
+    
+    <Float Name="ExposureTimeBaseAbs" NameSpace="Standard">
+        <ToolTip>Sets the time base (in microseconds) that is used when the exposure time is set with the 'exposure time raw' setting</ToolTip>
+        <Description>This float value sets the time base (in microseconds) that is used when the exposure time is set with the 'raw' setting.</Description>
+        <DisplayName>Exposure Timebase</DisplayName>
+        <!-- <pIsImplemented>GainRaw_InqPresenceFao</pIsImplemented> -->
+        <Streamable>Yes</Streamable>
+        <Value>1</Value>
+        <Min>1</Min>
+        <Max>100</Max>
+        <Representation>Linear</Representation>
+    </Float>
+    
+    <Integer Name="ExposureTimeRaw" NameSpace="Standard">
+        <ToolTip>Sets the 'raw' exposure time.  Actual exposure time = raw exposure setting  x  exposure time base abs setting</ToolTip>
+        <Description>This value sets an integer that will be used as a multiplier for the exposure timebase. The actual exposure time equals the current exposure time raw setting times the current exposure time base abs setting.</Description>
+        <DisplayName>Exposure Time (Raw)</DisplayName>
+        <!-- <pIsImplemented>GainRaw_InqPresenceFao</pIsImplemented> -->
+        <Streamable>Yes</Streamable>
+        <Value>10000</Value>
+        <Min>100</Min>
+        <Max>3000000</Max>
+        <Representation>Linear</Representation>
+    </Integer>
+  
+    <Enumeration Name="AcquisitionMode" NameSpace="Standard">
+        <ToolTip>Sets the image acquisition mode</ToolTip>
+        <Description>This enumeration sets the image acquisition mode. </Description>
+        <DisplayName>Acquisition Mode</DisplayName>
+        <EnumEntry Name="SingleFrame" NameSpace="Standard">
+            <ToolTip>Sets the acquisition mode to single frame</ToolTip>
+            <Description>This enumeration value sets the camera's acquisition mode to single frame</Description>
+            <DisplayName>Single Frame</DisplayName>
+            <Value>0</Value>
+        </EnumEntry>
+        <EnumEntry Name="Continuous" NameSpace="Standard">
+            <ToolTip>Sets the acquisition mode to continuous</ToolTip>
+            <Description>This enumeration value sets the camera's acquisition mode to continuous.</Description>
+            <DisplayName>Continuous</DisplayName>
+            <Value>1</Value>
+        </EnumEntry>
+        <Value>0</Value>
+    </Enumeration>
+  
+    <Command Name="AcquisitionStart" NameSpace="Standard">
+        <ToolTip>Starts the acquisition of images</ToolTip>
+        <Description>This command starts the acquisition of images. If the camera is set for single frame acquisition, it will start acquisition of one frame. If the camera is set for continuous frame acquisition, it will start continuous acquisition of frames.</Description>
+        <DisplayName>Acquisition Start</DisplayName>
+        <pIsLocked>NOT_TLParamsLocked</pIsLocked>
+        <Value>0xcafe</Value>
+        <CommandValue>1</CommandValue>
+    </Command>
+  
+    <Command Name="AcquisitionStop" NameSpace="Standard">
+        <ToolTip>Stops the acquisition of images</ToolTip>
+        <Description>If the camera is set for continuous image acquisition and acquisition has been started, this command stops the acquisition of images.</Description>
+        <DisplayName>Acquisition Stop</DisplayName>
+        <pIsLocked>NOT_TLParamsLocked</pIsLocked>
+        <Value>0xbabe</Value>
+        <CommandValue>0</CommandValue>
+    </Command>
+
+    <Enumeration Name="TriggerSelector" NameSpace="Standard">
+        <ToolTip>Selects the trigger type to configure. Once a trigger type has been selected, all changes to the trigger settings will be applied to the selected trigger.</ToolTip>
+        <Description>This enumeration selects the trigger type to configure. Once a trigger type has been selected, all changes to the trigger settings will be applied to the selected trigger.</Description>
+        <DisplayName>Trigger Selector</DisplayName>
+        <EnumEntry Name="AcquisitionStart" NameSpace="Standard">
+            <ToolTip>Selects the acquisition start trigger for configuration</ToolTip>
+            <Description>This enumeration value selects the acquisition start trigger for configuration.</Description>
+            <DisplayName>Acquisition Start</DisplayName>
+            <Value>0</Value>
+        </EnumEntry>
+        <Value>0</Value>
+    </Enumeration>
+  
+    <Enumeration Name="TriggerMode" NameSpace="Standard">
+        <ToolTip>Sets the mode for the selected trigger</ToolTip>
+        <Description>This enumeration sets the trigger mode for the selected trigger.</Description>
+        <DisplayName>Trigger Mode</DisplayName>
+        <pIsImplemented>TriggerMode_InqPresenceFao</pIsImplemented>
+        <Streamable>Yes</Streamable>
+        <EnumEntry Name="Off" NameSpace="Standard">
+            <ToolTip>Sets the mode for the selected trigger to off</ToolTip>
+            <Description>This enumeration value sets the mode for the selected trigger to off.</Description>
+            <DisplayName>Off</DisplayName>
+            <Value>0</Value>
+        </EnumEntry>
+        <!--  
+        <EnumEntry Name="On" NameSpace="Standard">
+            <ToolTip>Sets the mode for the selected trigger to on</ToolTip>
+            <Description>This enumeration value sets the mode for the selected trigger to on.</Description>
+            <DisplayName>On</DisplayName>
+            <Value>1</Value>
+        </EnumEntry>
+        -->   
+        <Value>0</Value>
+    </Enumeration>
+    
+    <Integer Name="TriggerSelector_InqPresenceFao" NameSpace="Custom">
+        <Value>0</Value>   
+    </Integer>
+    
+    <Integer Name="TriggerMode_InqPresenceFao" NameSpace="Custom">
+        <Value>1</Value>
+    </Integer>
+
+    <Enumeration Name="ExposureMode" NameSpace="Standard">
+        <ToolTip>Sets the exposure mode</ToolTip>
+        <Description>This enumeration sets the exposure mode.</Description>
+        <DisplayName>Exposure Mode</DisplayName>
+        <Streamable>Yes</Streamable>
+        <EnumEntry Name="Timed" NameSpace="Standard">
+            <ToolTip>Sets the exposure mode to timed</ToolTip>
+            <Description>This enumeration value sets the exposure mode to timed.</Description>
+            <DisplayName>Timed</DisplayName>
+            <!--- <pIsImplemented>ExposureMode_Timed_IncPresenceFao</pIsImplemented> -->
+            <Value>0</Value>
+        </EnumEntry>
+        <!--
+        <EnumEntry Name="TriggerWidth" NameSpace="Standard">
+            <ToolTip>Sets the exposure mode to trigger width</ToolTip>
+            <Description>This enumeration value sets the exposure mode to trigger width.</Description>
+            <DisplayName>Trigger Width</DisplayName>
+            <pIsImplemented>ExposureMode_TriggerWidth_IncPresenceFao</pIsImplemented>
+            <Value>1</Value>
+        </EnumEntry>
+        -->
+        <Value>0</Value>
+    </Enumeration>
+    
+    <Category Name="DeviceInformation" NameSpace="Standard">
+        <ToolTip>This category includes items that control the analog characteristics of the video signal</ToolTip>
+        <Description>This category includes items that control the analog characteristics of the video signal.</Description>
+        <DisplayName>Device Information</DisplayName>
+        <pFeature>DeviceVendorName</pFeature>
+        <pFeature>DeviceModelName</pFeature>
+        <pFeature>DeviceManufacturerInfo</pFeature>
+        <pFeature>DeviceVersion</pFeature>
+        <pFeature>DeviceFirmwareVersion</pFeature>
+        <pFeature>WidthMax</pFeature>
+        <pFeature>HeightMax</pFeature>        
+        <pFeature>UserSetSelector</pFeature>
+        <pFeature>ChunkModeActive</pFeature>      
+    </Category>
+    
+    <Float Name="FirmwareVersion">
+        <Value>1.0</Value>
+    </Float>
+
+    <StringReg Name="DeviceVendorName" NameSpace="Standard">
+        <ToolTip>Indicates the name of the device's vendor</ToolTip>
+        <Description>This is a read only element. It is a text description that indicates the name of the device's vendor.</Description>
+        <DisplayName>Vendor Name</DisplayName>
+        <Address>0x0048</Address>
+        <Length>32</Length>
+        <AccessMode>RO</AccessMode>
+        <pPort>Device</pPort>
+    </StringReg>
+    <StringReg Name="DeviceModelName" NameSpace="Standard">
+        <ToolTip>Indicates the model name of the device</ToolTip>
+        <Description>This is a read only element. It is a text description that indicates the model name of the device.</Description>
+        <DisplayName>Model Name</DisplayName>
+        <Address>0x0068</Address>
+        <Length>32</Length>
+        <AccessMode>RO</AccessMode>
+        <pPort>Device</pPort>
+    </StringReg>
+    <StringReg Name="DeviceManufacturerInfo" NameSpace="Standard">
+        <ToolTip>Provides additional information from the vendor about the device</ToolTip>
+        <Description>This is a read only element. It is a string that provides additional information from the vendor about the camera.</Description>
+        <DisplayName>Manufacturer Info</DisplayName>
+        <Address>0x00a8</Address>
+        <Length>48</Length>
+        <AccessMode>RO</AccessMode>
+        <pPort>Device</pPort>
+    </StringReg>
+    <StringReg Name="DeviceVersion" NameSpace="Standard">
+        <ToolTip>Indicates the version of the device</ToolTip>
+        <Description>This is a read only element. It is a string that indicates the version of the device.</Description>
+        <DisplayName>Device Version</DisplayName>
+        <Address>0x0088</Address>
+        <Length>32</Length>
+        <AccessMode>RO</AccessMode>
+        <pPort>Device</pPort>
+    </StringReg>
+
+    <StringReg Name="DeviceFirmwareVersion" NameSpace="Standard">
+        <ToolTip>Indicates the version of the device's firmware and software</ToolTip>
+        <Description>This is a read only element. It is a string that indicates the version of the device's firmware and software.</Description>
+        <DisplayName>Firmware Version</DisplayName>
+        <Address>0xfffff2f01014</Address>
+        <Length>32</Length>
+        <AccessMode>RO</AccessMode>
+        <pPort>Device</pPort>
+    </StringReg>
+
+    <Category Name="TransportLayer" NameSpace="Standard">
+	      <ToolTip>This category includes items related to the IIDC 1394 transport specification</ToolTip>
+	      <Description>This category includes items related to the IIDC 1394 transport specification.</Description>
+	      <DisplayName>Transport Layer</DisplayName>
+	      <pFeature>PayloadSize</pFeature>
+    </Category>
+  
+    <Integer Name="PayloadSize" NameSpace="Standard">
+        <ToolTip>Size of the payload in bytes</ToolTip>
+        <Description>Size of the payload in bytes. This is the total number of bytes sent in the payload. Image data + chunk data if present. No packet headers.</Description>
+        <pValue>PayloadSize_CtrlValueFao</pValue>
+        <Representation>PureNumber</Representation>
+    </Integer>
+  
+    <IntSwissKnife Name="PayloadSize_CtrlValueFao">
+        <Visibility>Invisible</Visibility>
+        <pVariable Name="WIDTH">Width</pVariable>
+        <pVariable Name="HEIGHT">Height</pVariable>
+        <Formula>WIDTH*HEIGHT*6</Formula>
+    </IntSwissKnife>
+  
+    <Integer Name="TLParamsLocked">
+        <ToolTip>Indicates whether a live grab is in progress</ToolTip>
+        <Visibility>Invisible</Visibility>
+        <Value>0</Value>
+        <Min>0</Min>
+        <Max>1</Max>
+    </Integer>    
+    
+    <IntSwissKnife Name="NOT_TLParamsLocked">
+        <ToolTip>Negation of the TLParamsLocked value</ToolTip>
+        <Visibility>Invisible</Visibility>
+        <pVariable Name="TLPL">TLParamsLocked</pVariable>
+        <Formula>(TLPL = 0) ? 1 : 0</Formula>
+    </IntSwissKnife>
+  
+    <Integer Name="UserSetSelector">
+        <ToolTip>Indicates whether a live grab is in progress</ToolTip>
+        <Visibility>Invisible</Visibility>
+        <pIsAvailable>UserSetSelectorAvail</pIsAvailable>
+        <Value>0</Value>
+        <Min>0</Min>
+        <Max>0</Max>
+    </Integer>
+
+    <Boolean Name="ChunkModeActive">
+        <Visibility>Invisible</Visibility>
+        <Value>0</Value>
+    </Boolean>
+
+    <Integer Name="UserSetSelectorAvail" NameSpace="Custom">
+      <Value>0</Value>
+    </Integer>
+	
+	<Command Name="FirePnPCallback" NameSpace="Custom">
+        <ToolTip>Fires a PnP Removal callback</ToolTip>
+        <Description>The callback(s) will be fired, the state of the device remains unchanged though.</Description>
+        <DisplayName>Fire PnP Callback</DisplayName>
+        <pValue>FirePnPCallbackValue</pValue>
+        <CommandValue>1</CommandValue>
+    </Command>	
+	
+	<Integer Name="FirePnPCallbackValue" NameSpace="Custom">
+	<ToolTip>The value for the reset feature</ToolTip>
+	<Value>0</Value>
+	<Min>0</Min>
+	<Max>1</Max>
+	</Integer>
+
+    <Port Name="Device" NameSpace="Standard">
+        <ToolTip>Port provding access to the camera.</ToolTip>
+    </Port>
+</RegisterDescription>

@@ -185,7 +185,7 @@ thread(void* arg)
 	configuration->camera->TriggerDelayAbs.SetValue(0);
 
 	configuration->camera->GainAuto.SetValue(GainAuto_Continuous);
-	configuration->camera->gainAuto	=	true;
+	configuration->gainAuto	=	true;
 
 	configuration->streamGrabber	=	new CBaslerGigECamera::StreamGrabber_t(configuration->camera->GetStreamGrabber(0));
 	configuration->streamGrabber->Open();

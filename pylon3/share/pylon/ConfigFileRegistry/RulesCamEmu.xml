@@ -1,0 +1,61 @@
+<?xml version="1.0"  encoding="utf-8" ?>
+
+<!--
+
+  (c) 2008 by Basler Vision Technologies
+  Section: Basler Components
+  Project: PYLON
+  Author:  IA
+
+This file specifies the rules defining how to bind GenICam XML 
+configuration files to pylon devices.
+
+THESE ARE THE PYLON STANDARD RULES, DON'T MODIFY THESE RULES!
+
+Create a new rules files to add new custom rules or to override the 
+standard rules. Store the custom file at the same location as this 
+standard rule file.
+
+Example for such a custom rules file:
+
+  <?xml version="1.0"  encoding="utf-8" ?>
+  <BindingRules
+    type="custom" 
+    xmlns="http://www.baslerweb.com/pylon" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xsi:schemaLocation="http://www.baslerweb.com/pylon BindingRules.xsd" >
+    <TransportLayer name="Basler1394">
+      <Rule priority="10">
+        <Manufacturer>Basler</Manufacturer>
+        <Name>sca.*custom</Name>
+        <SerialNumber>.*</SerialNumber>
+        <Download>no</Download>
+        <File>$(GENICAM_XMLPATH)/Basler/Baslerscout1394_custom.xml</File>
+      </Rule>
+    </TransportLayer>
+  </BindingRules>
+  
+  This file defines a custom rule to be applied to Basler IP cameras whose model 
+  names start with 'sca' and end with 'custom'. For these cameras the specified
+  XML configuration file should be used.
+  For more details about the grammar of rule files see the BindingRules.xsd XML schema file.
+-->
+
+<BindingRules
+    type="standard"
+    xmlns="http://www.baslerweb.com/pylon"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.baslerweb.com/pylon BindingRules.xsd" >
+
+    <!-- Rules for CamEmu cameras -->
+    <TransportLayer name="BaslerCamEmu">
+        <!-- For all BaslerCamEmu cameras always use the XML file installed with pylon -->
+        <Rule priority="0">
+            <Manufacturer>Basler</Manufacturer>
+            <Name>.*</Name>
+            <SerialNumber>.*</SerialNumber>
+            <Download>no</Download>
+            <File>$(GENICAM_XMLPATH)/Basler/BaslerCameraEmu.xml</File>
+        </Rule>
+    </TransportLayer>
+</BindingRules>

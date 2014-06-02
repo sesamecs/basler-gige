@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Filter>
+  <!-- Acquisition_Trigger  ============================= -->
+  <Feature>
+    <Name>AcquisitionMode</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <Feature>
+    <Name>AcquisitionStart</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <Feature>
+    <Name>AcquisitionStop</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <Feature>
+    <Name>TriggerSelector</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+  <Feature>
+    <Name>TriggerMode</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+  <Feature>
+    <Name>TriggerSoftware</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+  <Feature>
+    <Name>TriggerSource</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+  <Feature>
+    <Name>TriggerActivation</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+  <Feature>
+    <Name>ExposureMode</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+  <Feature>
+    <Name>ExposureTimeAbs</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+  <Feature>
+    <Name>ExposureTimeBaseAbs</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+  <Feature>
+    <Name>ExposureTimeBaseAbsEnable</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+
+  <!-- Timer Controls  ===================================== -->
+  <Feature>
+    <Name>TimerControls</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+
+  <!-- LUT Controls  ===================================== -->
+  <Feature>
+    <Name>LUTControls</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+  <Feature>
+    <Name>LUTValueAll</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <Feature>
+    <Name>DeviceScanType</Name>
+    <Visibility>Expert</Visibility>
+    <AccessMode>RO</AccessMode>
+  </Feature>
+  <!-- Device Information ================================ -->
+  <Feature>
+    <Name>DeviceReset</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <!-- Digital_IO ======================================== -->
+  <Feature>
+    <Name>DigitalIO</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+
+  <!-- Chunk Data Streams =================================-->
+  <Feature>
+    <Name>ChunkDataStreams</Name>
+    <Visibility>Guru</Visibility>
+  </Feature>
+
+  <!-- Chunk Data ==========================================-->
+  <Feature>
+    <Name>ChunkData</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+
+  <!-- Event Generation ================================== -->
+  <Feature>
+    <Name>EventsGeneration</Name>
+    <Visibility>Guru</Visibility>
+  </Feature>
+
+
+  <!-- UserSets ============================================-->
+  <Feature>
+    <Name>UserSets</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+
+  <!-- Transport Layer    ================================ -->
+  <Feature>
+    <Name>TransportLayer</Name>
+    <Visibility>Expert</Visibility>
+  </Feature>
+  <Feature>
+    <Name>GevInterfaceSelector</Name>
+    <AccessMode>RO</AccessMode>
+  </Feature>
+  <Feature>
+    <Name>GevStreamChannelSelector</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <Feature>
+    <Name>GevSCDA</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <Feature>
+    <Name>GevCurrentIPConfiguration</Name>
+    <AccessMode>RO</AccessMode>
+  </Feature>
+  <Feature>
+    <Name>GevPersistentIPAddress</Name>
+    <AccessMode>RO</AccessMode>
+  </Feature>
+  <Feature>
+    <Name>GevPersistentSubnetMask</Name>
+    <AccessMode>RO</AccessMode>
+  </Feature>
+  <Feature>
+    <Name>GevPersistentDefaultGateway</Name>
+    <AccessMode>RO</AccessMode>
+  </Feature>
+  <Feature>
+    <Name>GevTimestampControlLatch</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <Feature>
+    <Name>GevTimestampControlReset</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <Feature>
+    <Name>GevTimestampValue</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <Feature>
+    <Name>GevSCPInterfaceIndex</Name>
+    <AccessMode>RO</AccessMode>
+  </Feature>
+  <Feature>
+    <Name>GevHeartbeatTimeout</Name>
+    <AccessMode>RO</AccessMode>
+  </Feature>
+  <Feature>
+    <Name>GevSCPHostPort</Name>
+    <AccessMode>RO</AccessMode>
+  </Feature>
+  <Feature>
+    <Name>GevSCPSFireTestPacket</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <Feature>
+    <Name>GevSCPSBigEndian</Name>
+    <AccessMode>RO</AccessMode>
+  </Feature>
+  
+  <!-- FileAccess ======================================= -->
+  <Feature>
+    <Name>FileAccess</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+  <Feature>
+    <Name>FileAccessControl</Name>
+    <Visibility>Invisible</Visibility>
+  </Feature>
+
+</Filter>
+  

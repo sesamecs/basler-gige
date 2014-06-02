@@ -1,0 +1,140 @@
+<?xml version="1.0"  encoding="utf-8" ?>
+
+<!--
+
+  (c) 2007 by Basler Vision Technologies
+  Section: Basler Components
+  Project: PYLON
+  Author:  AH
+
+This file specifies the rules defining how to bind GenICam XML 
+configuration files to pylon devices.
+
+THESE ARE THE PYLON STANDARD RULES, DON'T MODIFY THESE RULES!
+
+Create a new rules file (a "custom" rules file) to add new custom rules or to override the 
+standard rules. Store the custom rules file at the same location as the 
+standard rules file.
+
+Example for a custom rules file:
+
+<?xml version="1.0"  encoding="utf-8" ?>
+<BindingRules
+  type="custom" 
+  xmlns="http://www.baslerweb.com/pylon" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  xsi:schemaLocation="http://www.baslerweb.com/pylon BindingRules.xsd" >
+  <TransportLayer name="Basler1394">
+    <Rule priority="10">
+      <Manufacturer>Basler</Manufacturer>
+      <Name>sca.*custom</Name>
+      <SerialNumber>.*</SerialNumber>
+      <Download>no</Download>
+      <File>$(GENICAM_XMLPATH)/Basler/Baslerscout1394_custom.xml</File>
+    </Rule>
+  </TransportLayer>
+    <TransportLayer name="BaslerGigE">
+      <Rule priority="10">
+        <Manufacturer>Basler</Manufacturer>
+        <Name>rul.*custom</Name>
+        <SerialNumber>.*</SerialNumber>
+        <Download>no</Download>
+        <File>$(GENICAM_XMLPATH)/Basler/Basler_runner_custom.xml</File>
+      </Rule>
+  </TransportLayer>
+</BindingRules>
+  
+  The above sample file defines two custom rules. The first one matches Basler 1394 cameras whose model 
+  names start with 'sca' and end with 'custom'. The second one matches Basler GigE cameras
+  whose model names start with 'rul' and end with 'custom'.
+  For the Basler 1394 and GigE cameras the specified XML configuration files are used. 
+  For more details about the grammar of rules files see the BindingRules.xsd XML schema file.
+-->
+
+<BindingRules
+    type="standard"
+    xmlns="http://www.baslerweb.com/pylon"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.baslerweb.com/pylon BindingRules.xsd" >
+
+    <!-- Rules for 1394 cameras -->
+    <TransportLayer name="Basler1394">
+        <!-- For all 1394 cameras always use the XML file installed with pylon -->
+        <Rule priority="0">
+            <Manufacturer>.*</Manufacturer>
+            <Name>.*</Name>
+            <SerialNumber>.*</SerialNumber>
+            <Download>no</Download>
+            <File>$(GENICAM_XMLPATH)/Basler/Basler_scout_1394.xml</File>
+        </Rule>
+        <Rule priority="1">
+            <Manufacturer>.*</Manufacturer>
+            <Name>A(1|3|6).*f(c)*</Name>
+            <SerialNumber>.*</SerialNumber>
+            <Download>no</Download>
+            <File>$(GENICAM_XMLPATH)/Basler/Basler_A1_A3_A6_1394.xml</File>
+        </Rule>
+    </TransportLayer>
+
+    <!-- Rules for GigE Vision cameras -->
+    <TransportLayer name="BaslerGigE">
+        <!-- Rule for all GigE Vision cameras: Download the configuration file from the device -->
+        <Rule priority="0">
+            <Manufacturer>.*</Manufacturer>
+            <Name>.*</Name>
+            <SerialNumber>.*</SerialNumber>
+            <Download>yes</Download>
+        </Rule>
+
+    </TransportLayer>
+
+    <!-- Rules for USB cameras -->
+    <TransportLayer name="BaslerUsb">
+        <!-- Rule for all USB cameras: Download the configuration file from the device -->
+        <Rule priority="0">
+            <Manufacturer>.*</Manufacturer>
+            <Name>.*</Name>
+            <SerialNumber>.*</SerialNumber>
+            <Download>yes</Download>
+        </Rule>
+    </TransportLayer>
+
+    <!-- Rules for Camera Link cameras -->
+    <TransportLayer name="BaslerCameraLink">
+        <!-- Rule for all Basler CameraLink cameras. Always try to download the configuration file from the device.
+         When for some reason the download fails, the configuration file shipped with the 
+         pylon installation should be used. -->
+        <Rule priority="0">
+            <Manufacturer>Basler</Manufacturer>
+            <Name>.*</Name>
+            <SerialNumber>.*</SerialNumber>
+            <Download>yes</Download>
+            <File>$(GENICAM_XMLPATH)/Basler/Basler_CameraLink.xml</File>
+        </Rule>
+        
+        <!-- for convenience add some rules for specific families.
+             Currently we're using the same XMl file for all CL cameras. -->
+        <Rule priority="1">
+            <Manufacturer>Basler</Manufacturer>
+            <Name>avA.*</Name>
+            <SerialNumber>.*</SerialNumber>
+            <Download>yes</Download>
+            <File>$(GENICAM_XMLPATH)/Basler/Basler_CameraLink.xml</File>
+        </Rule>
+        <Rule priority="1">
+            <Manufacturer>Basler</Manufacturer>
+            <Name>scA.*</Name>
+            <SerialNumber>.*</SerialNumber>
+            <Download>yes</Download>
+            <File>$(GENICAM_XMLPATH)/Basler/Basler_CameraLink.xml</File>
+        </Rule>
+        <Rule priority="1">
+            <Manufacturer>Basler</Manufacturer>
+            <Name>piA.*</Name>
+            <SerialNumber>.*</SerialNumber>
+            <Download>yes</Download>
+            <File>$(GENICAM_XMLPATH)/Basler/Basler_CameraLink.xml</File>
+        </Rule>
+    </TransportLayer>
+
+</BindingRules>
