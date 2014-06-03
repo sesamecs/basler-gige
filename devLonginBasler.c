@@ -167,7 +167,7 @@ readRecord(longinRecord *record)
 void*
 thread(void* arg)
 {
-	int				status;
+	int				status	=	0;
 	longinRecord*	record	=	(longinRecord*)arg;
 	input_t*		private	=	(input_t*)record->dpvt;
 
@@ -175,73 +175,23 @@ thread(void* arg)
 	pthread_detach(pthread_self());
 
 	if (strcmp(private->command, "getGain") == 0)
-	{
 		status	=	basler_getGain(private->device, (uint32_t*)&record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "getExposure") == 0)
-	{
 		status	=	basler_getExposure(private->device, (uint32_t*)&record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "getWidth") == 0)
-	{
 		status	=	basler_getWidth(private->device, (uint32_t*)&record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "getHeight") == 0)
-	{
 		status	=	basler_getHeight(private->device, (uint32_t*)&record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "getOffsetX") == 0)
-	{
 		status	=	basler_getOffsetX(private->device, (uint32_t*)&record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "getOffsetY") == 0)
-	{
 		status	=	basler_getOffsetY(private->device, (uint32_t*)&record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "getSize") == 0)
-	{
 		status	=	basler_getSize(private->device, (uint32_t*)&record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
 	else
-	{
 		errlogPrintf("Unable to read %s: Do not know how to process \"%s\" requested by %s\r\n", record->name, private->command, record->name);
-		return NULL;
-	}
+	if (status < 0)
+		errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
 
 	/*Process record*/
 	dbScanLock((struct dbCommon*)record);

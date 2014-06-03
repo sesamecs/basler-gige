@@ -178,7 +178,7 @@ readRecord(waveformRecord *record)
 void*
 thread(void* arg)
 {
-	int				status;
+	int				status	=	0;
 	uint32_t		size;
 	waveformRecord*	record	=	(waveformRecord*)arg;
 	input_t*		private	=	(input_t*)record->dpvt;
@@ -188,16 +188,10 @@ thread(void* arg)
 
 	status	=	basler_getSize(private->device, &size);
 	if (status < 0)
-	{
 		errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-		return NULL;
-	}
 	status	=	basler_getImage(private->device, record->bptr, size);
 	if (status < 0)
-	{
 		errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-		return NULL;
-	}
 
 	record->nord	=	size;
 	record->val		=	record->bptr;

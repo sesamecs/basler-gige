@@ -427,7 +427,7 @@ basler_setWidth(basler_t device, uint32_t width)
 
 	if ((width + configurations[device].offsetX) > 1296)
 	{
-		printf("Bad width/offsetX configuration\r\n");
+		errlogPrintf("Bad width/offsetX configuration\r\n");
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
 	}
@@ -477,7 +477,7 @@ basler_setHeight(basler_t device, uint32_t height)
 
 	if ((height + configurations[device].offsetY) > 966)
 	{
-		printf("Bad height/offsetY configuration\r\n");
+		errlogPrintf("Bad height/offsetY configuration\r\n");
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
 	}
@@ -527,7 +527,7 @@ basler_setOffsetX(basler_t device, uint32_t offsetX)
 
 	if ((offsetX + configurations[device].width) > 1296)
 	{
-		printf("Bad width/offsetX configuration\r\n");
+		errlogPrintf("Bad width/offsetX configuration\r\n");
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
 	}
@@ -577,7 +577,7 @@ basler_setOffsetY(basler_t device, uint32_t offsetY)
 
 	if ((offsetY + configurations[device].height) > 966)
 	{
-		printf("Bad height/offsetY configuration\r\n");
+		errlogPrintf("Bad height/offsetY configuration\r\n");
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
 	}

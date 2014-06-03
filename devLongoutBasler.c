@@ -163,7 +163,7 @@ writeRecord(longoutRecord *record)
 void*
 thread(void* arg)
 {
-	int					status;
+	int					status	=	0;
 	longoutRecord*		record	=	(longoutRecord*)arg;
 	output_t*			private	=	(output_t*)record->dpvt;
 
@@ -171,64 +171,21 @@ thread(void* arg)
 	pthread_detach(pthread_self());
 
 	if (strcmp(private->command, "setGain") == 0)
-	{
 		status	=	basler_setGain(private->device, record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "setExposure") == 0)
-	{
 		status	=	basler_setExposure(private->device, record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "setWidth") == 0)
-	{
 		status	=	basler_setWidth(private->device, record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "setHeight") == 0)
-	{
 		status	=	basler_setHeight(private->device, record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "setOffsetX") == 0)
-	{
 		status	=	basler_setOffsetX(private->device, record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "setOffsetY") == 0)
-	{
 		status	=	basler_setOffsetY(private->device, record->val);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
-			return NULL;
-		}
-	}
 	else
-	{
 		errlogPrintf("Unable to write %s: Do not know how to process \"%s\" requested by %s\r\n", record->name, private->command, record->name);
-		return NULL;
-	}
+	if (status < 0)
+		errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
 
 	/*Process record*/
 	dbScanLock((struct dbCommon*)record);

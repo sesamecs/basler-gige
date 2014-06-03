@@ -164,7 +164,7 @@ writeRecord(boRecord *record)
 void*
 thread(void* arg)
 {
-	int			status;
+	int			status	=	0;
 	boRecord*	record	=	(boRecord*)arg;
 	output_t*	private	=	(output_t*)record->dpvt;
 
@@ -172,28 +172,13 @@ thread(void* arg)
 	pthread_detach(pthread_self());
 
 	if (strcmp(private->command, "setTriggerSource") == 0)
-	{
 		status	=	basler_setTriggerSource(private->device, record->rval);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "setGainAuto") == 0)
-	{
 		status	=	basler_setGainAuto(private->device, record->rval);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
-			return NULL;
-		}
-	}
 	else
-	{
 		errlogPrintf("Unable to write %s: Do not know how to process \"%s\" requested by %s\r\n", record->name, private->command, record->name);
-		return NULL;
-	}
+	if (status < 0)
+		errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
 
 	/*Process record*/
 	dbScanLock((struct dbCommon*)record);

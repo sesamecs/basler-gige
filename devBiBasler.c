@@ -165,7 +165,7 @@ readRecord(biRecord *record)
 void*
 thread(void* arg)
 {
-	int				status;
+	int				status	=	0;
 	biRecord*		record	=	(biRecord*)arg;
 	input_t*		private	=	(input_t*)record->dpvt;
 
@@ -173,28 +173,13 @@ thread(void* arg)
 	pthread_detach(pthread_self());
 
 	if (strcmp(private->command, "getTriggerSource") == 0)
-	{
 		status	=	basler_getTriggerSource(private->device, (uint32_t*)&record->rval);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
 	else if (strcmp(private->command, "getGainAuto") == 0)
-	{
 		status	=	basler_getGainAuto(private->device, (bool*)&record->rval);
-		if (status < 0)
-		{
-			errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
-			return NULL;
-		}
-	}
 	else
-	{
 		errlogPrintf("Unable to read %s: Do not know how to process \"%s\" requested by %s\r\n", record->name, private->command, record->name);
-		return NULL;
-	}
+	if (status < 0)
+		errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
 
 	/*Process record*/
 	dbScanLock((struct dbCommon*)record);
