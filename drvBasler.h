@@ -1,6 +1,5 @@
 #ifndef __BASLER_H__
 #define __BASLER_H__
-:A
 
 #include <stdint.h>
 
