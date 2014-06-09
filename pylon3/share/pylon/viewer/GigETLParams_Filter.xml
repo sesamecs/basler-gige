@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Filter>
+  <Feature>
+    <Name>Root</Name>
+    <Visibility>Guru</Visibility>
+  </Feature>
+  <Feature>
+    <Name>ReadTimeout</Name>
+    <Visibility>Guru</Visibility>
+  </Feature>
+  <Feature>
+    <Name>WriteTimeout</Name>
+    <Visibility>Guru</Visibility>
+  </Feature>
+  <Feature>
+    <Name>HeartbeatTimeout</Name>
+    <Visibility>Guru</Visibility>
+  </Feature>
+
+</Filter>

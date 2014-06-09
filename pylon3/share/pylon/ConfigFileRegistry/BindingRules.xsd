@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" id="BindingRules" targetNamespace="http://www.baslerweb.com/pylon" xmlns="http://www.baslerweb.com/pylon" xmlns:NS="http://www.baslerweb.com/pylon" elementFormDefault="qualified">
+  <!-- A Binding Rules file defines rules used to define what GenICam XML file is 
+       to be used for a device described by the values camera model name, vendor name, 
+       and serial numberdifferent cameras.
+       In a binding rule file, transport layer specific rules are defined describing
+       the source of the camera description device. The source is either a local file
+       in the file system or a file that can be downloaded from the camera device.
+       -->
+  
+  <!--
+       A Binding Rules files always must start with a top-level element 'BindingRules'. 
+       The 'type' attributes specifies whether the rules defined in the file are
+       standard rules that are shipped with a pylon installation or custom rules 
+       provided by the user. Custom rules can either extend the standard rules or 
+       override standard rules (see 'priority' attribute below).
+  -->
+  <xs:element name="BindingRules">
+    <xs:complexType>
+      <xs:sequence>
+        <!-- For each transport layer (e.g. 'Basler1394', 'BaslerGigE') there is a 'TransportLayer' child 
+        element containing the binding rules for devices supported by a transport layer -->
+        <xs:element name="TransportLayer" type="TransportLayerType" maxOccurs="unbounded" />
+      </xs:sequence>
+      <!-- The 'type' attribute (standard rules vs. custom rules) -->
+      <xs:attribute name="type" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="custom" />
+            <xs:enumeration value="standard" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- A 'TransportLayer' element has 'Rule' elements as childs -->
+  <xs:complexType name="TransportLayerType">
+    <xs:sequence>
+      <xs:element name="Rule" type="RuleType" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="name" use="required" />
+  </xs:complexType>
+
+  <!-- Syntax of a rule. The rule consists of regular expressions for the camera vendor, 
+       camera model name and serial number. These regular expressions are matched against
+       the values used for creating a pylon device.
+       In addition to the regular expressions, the rule specifies whether the XML file 
+       should be downloaded from the camera device or if a file in the local file system
+       should be used.
+  -->
+  <xs:complexType name="RuleType">
+    <xs:all>
+      <!-- Optional description of the rule -->
+      <xs:element name="Description" type="xs:string" minOccurs="0" maxOccurs="1"/>
+
+      <!-- Camera Manufacturer (e.g. 'Basler'). This field is interpreted as a regular 
+           expression following the Perl syntax for regular expressions. -->
+      <xs:element name="Manufacturer" type="xs:string" default=".*" minOccurs="0" />
+
+      <!-- Camera model name (e.g. sca640.*). This field is interpreted as a regular 
+           expression following the Perl syntax for regular expressions. -->
+      <xs:element name="Name" type="xs:string" default=".*" minOccurs="0" />
+      
+      <!-- Serial number of the device. This field is interpreted as a regular 
+           expression following the Perl syntax for regular expressions. -->
+      <xs:element name="SerialNumber" type="xs:string" default=".*" minOccurs="0" />
+
+      <!-- Specifies if the device factory should try to download the XML file 
+           from the device. This field has higher priority than the 'File' field
+           (see below). Allowed values are 'yes' and 'no' -->
+      <xs:element name="Download">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="yes" />
+            <xs:enumeration value="no" />
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <!-- Location of a local XML file to use. If Download=yes, the file is
+           only used when downloading the XML file from the camera fails.
+           When Download=no, a file must be specified. 
+           The value of the 'File' field can refer to environment variables,
+           example: '$(GENICAM_ROOT)/xml/genapi/Basler/BaslerGigE.xml'
+       -->
+      <xs:element name="File" type="xs:string" default="" minOccurs="0" />
+      <!-- Location of a local XML file to merge in the normal XML for the camera. 
+        Mainly used by developers. -->
+      <xs:element name="AdditionalFile" type="xs:string" default="" minOccurs="0" maxOccurs="1" /> 
+    </xs:all>
+ 
+    <!-- Each rule has a priority (the higher the number, the higher the priority).
+         When several rules match to a given device, the rule with the highest priority is taken.
+         If both a custom rule and a standard rule with the same priority are matching, the 
+         custom rule will be applied.
+         If there is an ambiguity, e.g., more than one custom rule with 
+         the same high priority are matching, the transport layer will throw an exception. 
+         -->
+    <xs:attribute name="priority" type="xs:unsignedInt" use="required" />
+  </xs:complexType>
+</xs:schema>
+
+
