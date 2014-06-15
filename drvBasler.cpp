@@ -160,112 +160,116 @@ basler_open(char *deviceName)
 void*
 thread(void* arg)
 {
-	configuration_t*		configuration	=	(configuration_t*)arg;
-	CTlFactory&				TlFactory		= 	CTlFactory::GetInstance();
-	CBaslerGigEDeviceInfo	di; 
-	di.SetIpAddress(configuration->ip);
-	IPylonDevice*			dev 			= 	TlFactory.CreateDevice(di);
+	try
+	{
+		configuration_t*		configuration	=	(configuration_t*)arg;
+		CTlFactory&				TlFactory		= 	CTlFactory::GetInstance();
+		CBaslerGigEDeviceInfo	di; 
+		di.SetIpAddress(configuration->ip);
+		IPylonDevice*			dev 			= 	TlFactory.CreateDevice(di);
 
-	configuration->camera					=	new CBaslerGigECamera(dev);
-	configuration->camera->Open();
+		configuration->camera					=	new CBaslerGigECamera(dev);
+		configuration->camera->Open();
 
-	configuration->camera->PixelFormat.SetValue(PixelFormat_Mono8);
-	configuration->camera->GevSCPSPacketSize.SetValue(1500);
-	configuration->camera->GevSCPD.SetValue(0);
-	configuration->camera->GevSCFTD.SetValue(0);
+		configuration->camera->PixelFormat.SetValue(PixelFormat_Mono8);
+		configuration->camera->GevSCPSPacketSize.SetValue(1500);
+		configuration->camera->GevSCPD.SetValue(0);
+		configuration->camera->GevSCFTD.SetValue(0);
 
-	configuration->camera->AcquisitionMode.SetValue(AcquisitionMode_SingleFrame);
+		configuration->camera->AcquisitionMode.SetValue(AcquisitionMode_SingleFrame);
 
-	configuration->camera->TriggerSelector.SetValue(TriggerSelector_AcquisitionStart);
-	configuration->camera->TriggerMode.SetValue(TriggerMode_Off);
-	configuration->camera->TriggerSelector.SetValue(TriggerSelector_FrameStart);
-	configuration->camera->TriggerMode.SetValue(TriggerMode_On);
-	configuration->camera->TriggerSource.SetValue(TriggerSource_Software);
-	configuration->triggerSource	=	TRIGGER_SOURCE_SOFTWARE;
-	configuration->camera->TriggerDelayAbs.SetValue(0);
+		configuration->camera->TriggerSelector.SetValue(TriggerSelector_AcquisitionStart);
+		configuration->camera->TriggerMode.SetValue(TriggerMode_Off);
+		configuration->camera->TriggerSelector.SetValue(TriggerSelector_FrameStart);
+		configuration->camera->TriggerMode.SetValue(TriggerMode_On);
+		configuration->camera->TriggerSource.SetValue(TriggerSource_Software);
+		configuration->triggerSource	=	TRIGGER_SOURCE_SOFTWARE;
+		configuration->camera->TriggerDelayAbs.SetValue(0);
 
-	configuration->camera->GainAuto.SetValue(GainAuto_Continuous);
-	configuration->gainAuto	=	true;
+		configuration->camera->GainAuto.SetValue(GainAuto_Continuous);
+		configuration->gainAuto	=	true;
 
-	configuration->streamGrabber	=	new CBaslerGigECamera::StreamGrabber_t(configuration->camera->GetStreamGrabber(0));
-	configuration->streamGrabber->Open();
+		configuration->streamGrabber	=	new CBaslerGigECamera::StreamGrabber_t(configuration->camera->GetStreamGrabber(0));
+		configuration->streamGrabber->Open();
 
-	/*Inform init() that driver thread has initialized*/
-	pthread_mutex_lock(&configuration->syncMutex);
-	pthread_cond_signal(&configuration->conditionSignal);
+		/*Inform init() that driver thread has initialized*/
+		pthread_mutex_lock(&configuration->syncMutex);
+		pthread_cond_signal(&configuration->conditionSignal);
 
-	while (true) 
-	{ 
-		/*Wait for command*/
-		pthread_cond_wait(&configuration->conditionSignal, &configuration->syncMutex);
+		while (true) 
+		{ 
+			/*Wait for command*/
+			pthread_cond_wait(&configuration->conditionSignal, &configuration->syncMutex);
 
-		printf("%s: Processing opcode=%d\r\n", configuration->name, configuration->opcode);
+			printf("%s: Processing opcode=%d\r\n", configuration->name, configuration->opcode);
 
-		/*Execute command*/
-		switch (configuration->opcode)
-		{
-			case OPCODE_GET_IMAGE:
-				getImage(configuration);
-				break;
-			case OPCODE_SET_GAIN_AUTO:
-				setGainAuto(configuration->camera, configuration->gainAuto);
-				break;
-			case OPCODE_GET_GAIN_AUTO:
-				getGainAuto(configuration->camera, &configuration->gainAuto);
-				break;
-			case OPCODE_SET_GAIN:
-				setGain(configuration->camera, configuration->gain);
-				break;
-			case OPCODE_GET_GAIN:
-				getGain(configuration->camera, &configuration->gain);
-				break;
-			case OPCODE_SET_EXPOSURE:
-				setExposure(configuration->camera, configuration->exposure);
-				break;
-			case OPCODE_GET_EXPOSURE:
-				getExposure(configuration->camera, &configuration->exposure);
-				break;
-			case OPCODE_SET_WIDTH:
-				setWidth(configuration->camera, configuration->width);
-				break;
-			case OPCODE_GET_WIDTH:
-				getWidth(configuration->camera, &configuration->width);
-				break;
-			case OPCODE_SET_HEIGHT:
-				setHeight(configuration->camera, configuration->height);
-				break;
-			case OPCODE_GET_HEIGHT:
-				getHeight(configuration->camera, &configuration->height);
-				break;
-			case OPCODE_SET_OFFSET_X:
-				setOffsetX(configuration->camera, configuration->offsetX);
-				break;
-			case OPCODE_GET_OFFSET_X:
-				getOffsetX(configuration->camera, &configuration->offsetX);
-				break;
-			case OPCODE_SET_OFFSET_Y:
-				setOffsetY(configuration->camera, configuration->offsetY);
-				break;
-			case OPCODE_GET_OFFSET_Y:
-				getOffsetY(configuration->camera, &configuration->offsetY);
-				break;
-			case OPCODE_GET_SIZE:
-				getSize(configuration->camera, &configuration->size);
-				break;
-			case OPCODE_SET_TRIGGER_SOURCE:
-				setTriggerSource(configuration->camera, configuration->triggerSource);
-				break;
-			case OPCODE_GET_TRIGGER_SOURCE:
-				getTriggerSource(configuration->camera, &configuration->triggerSource);
-				break;
+			/*Execute command*/
+			switch (configuration->opcode)
+			{
+				case OPCODE_GET_IMAGE:
+					getImage(configuration);
+					break;
+				case OPCODE_SET_GAIN_AUTO:
+					setGainAuto(configuration->camera, configuration->gainAuto);
+					break;
+				case OPCODE_GET_GAIN_AUTO:
+					getGainAuto(configuration->camera, &configuration->gainAuto);
+					break;
+				case OPCODE_SET_GAIN:
+					setGain(configuration->camera, configuration->gain);
+					break;
+				case OPCODE_GET_GAIN:
+					getGain(configuration->camera, &configuration->gain);
+					break;
+				case OPCODE_SET_EXPOSURE:
+					setExposure(configuration->camera, configuration->exposure);
+					break;
+				case OPCODE_GET_EXPOSURE:
+					getExposure(configuration->camera, &configuration->exposure);
+					break;
+				case OPCODE_SET_WIDTH:
+					setWidth(configuration->camera, configuration->width);
+					break;
+				case OPCODE_GET_WIDTH:
+					getWidth(configuration->camera, &configuration->width);
+					break;
+				case OPCODE_SET_HEIGHT:
+					setHeight(configuration->camera, configuration->height);
+					break;
+				case OPCODE_GET_HEIGHT:
+					getHeight(configuration->camera, &configuration->height);
+					break;
+				case OPCODE_SET_OFFSET_X:
+					setOffsetX(configuration->camera, configuration->offsetX);
+					break;
+				case OPCODE_GET_OFFSET_X:
+					getOffsetX(configuration->camera, &configuration->offsetX);
+					break;
+				case OPCODE_SET_OFFSET_Y:
+					setOffsetY(configuration->camera, configuration->offsetY);
+					break;
+				case OPCODE_GET_OFFSET_Y:
+					getOffsetY(configuration->camera, &configuration->offsetY);
+					break;
+				case OPCODE_GET_SIZE:
+					getSize(configuration->camera, &configuration->size);
+					break;
+				case OPCODE_SET_TRIGGER_SOURCE:
+					setTriggerSource(configuration->camera, configuration->triggerSource);
+					break;
+				case OPCODE_GET_TRIGGER_SOURCE:
+					getTriggerSource(configuration->camera, &configuration->triggerSource);
+					break;
+			}
+
+			printf("%s: Finished processing opcode=%d\r\n", configuration->name, configuration->opcode);
+
+			pthread_cond_signal(&configuration->conditionSignal);
 		}
 
-		printf("%s: Finished processing opcode=%d\r\n", configuration->name, configuration->opcode);
+		configuration->camera->Close();
+	} catch (exception e) { printf("Exception: %s\r\n", e.what()); }
 
-		pthread_cond_signal(&configuration->conditionSignal);
-	}
-
-	configuration->camera->Close();
 	return NULL;
 }
 
