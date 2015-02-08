@@ -160,13 +160,12 @@ basler_open(char *deviceName)
 void*
 thread(void* arg)
 {
-	configuration_t*		configuration	=	(configuration_t*)arg;
-	CTlFactory&				TlFactory		= 	CTlFactory::GetInstance();
-	CBaslerGigEDeviceInfo	di; 
-	di.SetIpAddress(configuration->ip);
-	IPylonDevice*			dev 			= 	TlFactory.CreateDevice(di);
+	configuration_t*	configuration;
+	IPylonDevice*		device;
 
-	configuration->camera					=	new CBaslerGigECamera(dev);
+	configuration			=	(configuration_t*)arg;
+	device					=	CTlFactory::GetInstance().CreateDevice(CBaslerGigEDeviceInfo().SetIpAddress(configuration->ip));
+	configuration->camera	=	new CBaslerGigECamera(device);
 	configuration->camera->Open();
 
 	configuration->camera->PixelFormat.SetValue(PixelFormat_Mono8);
