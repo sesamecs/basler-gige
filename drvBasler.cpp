@@ -129,7 +129,7 @@ init(void)
 		status	=	pthread_create(&handle, NULL, thread, &configurations[device]);	
 		if (status)
 		{
-			errlogPrintf("Unable to initialize driver thread: Unable to create thread\r\n");
+			errlogPrintf("\x1B[31mUnable to initialize driver thread: Unable to create thread\r\n\x1B[0m");
 			pthread_mutex_unlock(&configurations[device].syncMutex);
 			return -1;
 		}
@@ -153,7 +153,7 @@ basler_open(char *deviceName)
 			return (basler_t)device;
 	}
 
-    errlogPrintf("Unable to open device: device %s not found\r\n", deviceName);
+    errlogPrintf("\x1B[31mUnable to open device: device %s not found\r\n\x1B[0m", deviceName);
 	return -1;
 }
 
@@ -427,7 +427,7 @@ basler_setWidth(basler_t device, uint32_t width)
 
 	if ((width + configurations[device].offsetX) > 1296)
 	{
-		errlogPrintf("Bad width/offsetX configuration\r\n");
+		errlogPrintf("\x1B[31mBad width/offsetX configuration\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
 	}
@@ -477,7 +477,7 @@ basler_setHeight(basler_t device, uint32_t height)
 
 	if ((height + configurations[device].offsetY) > 966)
 	{
-		errlogPrintf("Bad height/offsetY configuration\r\n");
+		errlogPrintf("\x1B[31mBad height/offsetY configuration\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
 	}
@@ -527,7 +527,7 @@ basler_setOffsetX(basler_t device, uint32_t offsetX)
 
 	if ((offsetX + configurations[device].width) > 1296)
 	{
-		errlogPrintf("Bad width/offsetX configuration\r\n");
+		errlogPrintf("\x1B[31mBad width/offsetX configuration\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
 	}
@@ -577,7 +577,7 @@ basler_setOffsetY(basler_t device, uint32_t offsetY)
 
 	if ((offsetY + configurations[device].height) > 966)
 	{
-		errlogPrintf("Bad height/offsetY configuration\r\n");
+		errlogPrintf("\x1B[31mBad height/offsetY configuration\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
 	}
@@ -704,33 +704,16 @@ getImage(configuration_t* configuration)
 		configuration->streamGrabber->RetrieveResult(Result);
 
 		if (Result.Succeeded())
-		{
-			cout << "Image acquired..." << endl;
-			cout << "Size: " << Result.GetSizeX() << " x " << Result.GetSizeY() << endl;
-			cout << "Gray value of first pixel: " << (uint32_t) configuration->buffer[0] << endl;
-		}
+			printf("Gray value of first pixel: %d\r\n", (uint32_t) configuration->buffer[0]);
 		else
-		{
-			cerr << "No image acquired!" << endl;
-			cerr << "Error code : 0x" << hex
-			<< Result.GetErrorCode() << endl;
-			cerr << "Error description : "
-			<< Result.GetErrorDescription() << endl;
-		}
+			printf("Error code : %x\r\n", Result.GetErrorCode());
 	}
 	else 
 	{
-		// Timeout
-		cerr << "Timeout occurred!" << endl;
-
-		// Get the pending buffer back (You are not allowed to deregister
-		// buffers when they are still queued)
+		printf("Timeout occurred!\r\n");
 		configuration->streamGrabber->CancelGrab();
-
-		// Get all buffers back
 		for (GrabResult r; configuration->streamGrabber->RetrieveResult(r););
 	}
-
 	configuration->streamGrabber->DeregisterBuffer(hBuffer);
 	configuration->streamGrabber->FinishGrab();
 }
@@ -910,17 +893,17 @@ static 	long	configure(char *name, char *ip)
 
 	if (!name || strlen(name) == 0)
 	{
-		errlogPrintf("Unable to configure device: Missing name\r\n");
+		errlogPrintf("\x1B[31mUnable to configure device: Missing name\r\n\x1B[0m");
 		return -1;
 	}
 	if (!ip || !strlen(ip) || inet_pton(AF_INET, ip, buffer) < 0)
 	{
-		errlogPrintf("Unable to configure device: Missing or incorrect IP address\r\n");
+		errlogPrintf("\x1B[31mUnable to configure device: Missing or incorrect IP address\r\n\x1B[0m");
 		return -1;
 	}
 	if (deviceCount >= NUMBER_OF_DEVICES)
 	{
-		errlogPrintf("Unable to configure device: Too many devices\r\n");
+		errlogPrintf("\x1B[31mUnable to configure device: Too many devices\r\n\x1B[0m");
 		return -1;
 	}
 
