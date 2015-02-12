@@ -51,24 +51,25 @@ typedef enum
 
 typedef struct
 {
-	char				name	[30];
-	char				ip		[30];
-	pthread_mutex_t		hardwareMutex;	
-	pthread_mutex_t		syncMutex;
-	pthread_cond_t  	conditionSignal;
-	CBaslerGigECamera*	camera;
-	CBaslerGigECamera::StreamGrabber_t* 	streamGrabber;
-	opcode_t			opcode;
-	uint8_t*			buffer;
-	bool				gainAuto;
-	uint32_t			gain;
-	uint32_t			exposure;
-	uint32_t			width;
-	uint32_t			height;
-	uint32_t			size;
-	triggerSource_t		triggerSource;
-	uint32_t			offsetX;
-	uint32_t			offsetY;
+	char								name	[30];
+	char								ip		[30];
+	pthread_mutex_t						hardwareMutex;	
+	pthread_mutex_t						syncMutex;
+	pthread_cond_t						conditionSignal;
+	int									status;
+	opcode_t							opcode;
+	uint8_t*							buffer;
+	bool								gainAuto;
+	uint32_t							gain;
+	uint32_t							exposure;
+	uint32_t							width;
+	uint32_t							height;
+	uint32_t							size;
+	triggerSource_t						triggerSource;
+	uint32_t							offsetX;
+	uint32_t							offsetY;
+	CBaslerGigECamera*					camera;
+	CBaslerGigECamera::StreamGrabber_t*	streamGrabber;
 } configuration_t;
 
 /*
@@ -84,29 +85,28 @@ static	PylonAutoInitTerm 		autoInitTerm;
 static	long	init(void);
 static	long	report(int detail);
 static	void* 	thread(void* arg);
-static	void	getImage(configuration_t* configuration);
-static	void	setGainAuto(CBaslerGigECamera* camera, bool gainAuto);
-static	void	getGainAuto(CBaslerGigECamera* camera, bool *gainAuto);
-static	void	setGain(CBaslerGigECamera* camera, uint32_t gain);
-static	void	getGain(CBaslerGigECamera* camera, uint32_t *gain);
-static	void	setExposure(CBaslerGigECamera* camera, uint32_t exposure);
-static	void	getExposure(CBaslerGigECamera* camera, uint32_t *exposure);
-static	void	setWidth(CBaslerGigECamera* camera, uint32_t width);
-static	void	getWidth(CBaslerGigECamera* camera, uint32_t *width);
-static	void	setHeight(CBaslerGigECamera* camera, uint32_t height);
-static	void	getHeight(CBaslerGigECamera* camera, uint32_t *height);
-static	void	getSize(CBaslerGigECamera* camera, uint32_t *size);
-static	void	setTriggerSource(CBaslerGigECamera* camera, triggerSource_t source);
-static	void	getTriggerSource(CBaslerGigECamera* camera, triggerSource_t* source);
-static	void	setOffsetX(CBaslerGigECamera* camera, uint32_t offsetX);
-static	void	getOffsetX(CBaslerGigECamera* camera, uint32_t *offsetX);
-static	void	setOffsetY(CBaslerGigECamera* camera, uint32_t offsetY);
-static	void	getOffsetY(CBaslerGigECamera* camera, uint32_t *offsetY);
+static	long	getImage(configuration_t* configuration);
+static	long	setGainAuto(configuration_t* configuration, bool gainAuto);
+static	long	getGainAuto(configuration_t* configuration, bool *gainAuto);
+static	long	setGain(configuration_t* configuration, uint32_t gain);
+static	long	getGain(configuration_t* configuration, uint32_t *gain);
+static	long	setExposure(configuration_t* configuration, uint32_t exposure);
+static	long	getExposure(configuration_t* configuration, uint32_t *exposure);
+static	long	setWidth(configuration_t* configuration, uint32_t width);
+static	long	getWidth(configuration_t* configuration, uint32_t *width);
+static	long	setHeight(configuration_t* configuration, uint32_t height);
+static	long	getHeight(configuration_t* configuration, uint32_t *height);
+static	long	getSize(configuration_t* configuration, uint32_t *size);
+static	long	setTriggerSource(configuration_t* configuration, triggerSource_t source);
+static	long	getTriggerSource(configuration_t* configuration, triggerSource_t* source);
+static	long	setOffsetX(configuration_t* configuration, uint32_t offsetX);
+static	long	getOffsetX(configuration_t* configuration, uint32_t *offsetX);
+static	long	setOffsetY(configuration_t* configuration, uint32_t offsetY);
+static	long	getOffsetY(configuration_t* configuration, uint32_t *offsetY);
 
 /*
  * Function definitions
  */
-
 static long 
 init(void)
 {
@@ -137,24 +137,12 @@ init(void)
 		/*Wait for driver thread to initialize*/
 		pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].syncMutex);
+
+		if (configurations[device].status < 0)
+			errlogPrintf("\x1B[31mUnable to initialize driver thread\r\n\x1B[0m");
 	}
 
 	return 0;
-}
-
-basler_t
-basler_open(char *deviceName)
-{
-	basler_t device;
-
-	for (device = 0; device < deviceCount; device++)
-	{
-		if (strcmp(configurations[device].name, deviceName) == 0)
-			return (basler_t)device;
-	}
-
-    errlogPrintf("\x1B[31mUnable to open device: device %s not found\r\n\x1B[0m", deviceName);
-	return -1;
 }
 
 void*
@@ -164,30 +152,38 @@ thread(void* arg)
 	IPylonDevice*		device;
 
 	configuration			=	(configuration_t*)arg;
-	device					=	CTlFactory::GetInstance().CreateDevice(CBaslerGigEDeviceInfo().SetIpAddress(configuration->ip));
-	configuration->camera	=	new CBaslerGigECamera(device);
-	configuration->camera->Open();
 
-	configuration->camera->PixelFormat.SetValue(PixelFormat_Mono8);
-	configuration->camera->GevSCPSPacketSize.SetValue(1500);
-	configuration->camera->GevSCPD.SetValue(0);
-	configuration->camera->GevSCFTD.SetValue(0);
+	try
+	{
+		device					=	CTlFactory::GetInstance().CreateDevice(CBaslerGigEDeviceInfo().SetIpAddress(configuration->ip));
+		configuration->camera	=	new CBaslerGigECamera(device);
+		configuration->camera->Open();
 
-	configuration->camera->AcquisitionMode.SetValue(AcquisitionMode_SingleFrame);
+		configuration->camera->PixelFormat.SetValue(PixelFormat_Mono8);
+		configuration->camera->GevSCPSPacketSize.SetValue(1500);
+		configuration->camera->GevSCPD.SetValue(0);
+		configuration->camera->GevSCFTD.SetValue(0);
 
-	configuration->camera->TriggerSelector.SetValue(TriggerSelector_AcquisitionStart);
-	configuration->camera->TriggerMode.SetValue(TriggerMode_Off);
-	configuration->camera->TriggerSelector.SetValue(TriggerSelector_FrameStart);
-	configuration->camera->TriggerMode.SetValue(TriggerMode_On);
-	configuration->camera->TriggerSource.SetValue(TriggerSource_Software);
-	configuration->triggerSource	=	TRIGGER_SOURCE_SOFTWARE;
-	configuration->camera->TriggerDelayAbs.SetValue(0);
+		configuration->camera->AcquisitionMode.SetValue(AcquisitionMode_SingleFrame);
 
-	configuration->camera->GainAuto.SetValue(GainAuto_Continuous);
-	configuration->gainAuto	=	true;
+		configuration->camera->TriggerSelector.SetValue(TriggerSelector_AcquisitionStart);
+		configuration->camera->TriggerMode.SetValue(TriggerMode_Off);
+		configuration->camera->TriggerSelector.SetValue(TriggerSelector_FrameStart);
+		configuration->camera->TriggerMode.SetValue(TriggerMode_On);
+		configuration->camera->TriggerSource.SetValue(TriggerSource_Software);
+		configuration->triggerSource	=	TRIGGER_SOURCE_SOFTWARE;
+		configuration->camera->TriggerDelayAbs.SetValue(0);
 
-	configuration->streamGrabber	=	new CBaslerGigECamera::StreamGrabber_t(configuration->camera->GetStreamGrabber(0));
-	configuration->streamGrabber->Open();
+		configuration->camera->GainAuto.SetValue(GainAuto_Continuous);
+		configuration->gainAuto	=	true;
+
+		configuration->streamGrabber	=	new CBaslerGigECamera::StreamGrabber_t(configuration->camera->GetStreamGrabber(0));
+		configuration->streamGrabber->Open();
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		configuration->status	=	-1;
+	}
 
 	/*Inform init() that driver thread has initialized*/
 	pthread_mutex_lock(&configuration->syncMutex);
@@ -198,69 +194,66 @@ thread(void* arg)
 		/*Wait for command*/
 		pthread_cond_wait(&configuration->conditionSignal, &configuration->syncMutex);
 
-		printf("%s: Processing opcode=%d\r\n", configuration->name, configuration->opcode);
+		printf("Received command %d\r\n", configuration->opcode);
 
 		/*Execute command*/
 		switch (configuration->opcode)
 		{
 			case OPCODE_GET_IMAGE:
-				getImage(configuration);
+				configuration->status	=	getImage(configuration);
 				break;
 			case OPCODE_SET_GAIN_AUTO:
-				setGainAuto(configuration->camera, configuration->gainAuto);
+				configuration->status	=	setGainAuto(configuration, configuration->gainAuto);
 				break;
 			case OPCODE_GET_GAIN_AUTO:
-				getGainAuto(configuration->camera, &configuration->gainAuto);
+				configuration->status	=	getGainAuto(configuration, &configuration->gainAuto);
 				break;
 			case OPCODE_SET_GAIN:
-				setGain(configuration->camera, configuration->gain);
+				configuration->status	=	setGain(configuration, configuration->gain);
 				break;
 			case OPCODE_GET_GAIN:
-				getGain(configuration->camera, &configuration->gain);
+				configuration->status	=	getGain(configuration, &configuration->gain);
 				break;
 			case OPCODE_SET_EXPOSURE:
-				setExposure(configuration->camera, configuration->exposure);
+				configuration->status	=	setExposure(configuration, configuration->exposure);
 				break;
 			case OPCODE_GET_EXPOSURE:
-				getExposure(configuration->camera, &configuration->exposure);
+				getExposure(configuration, &configuration->exposure);
 				break;
 			case OPCODE_SET_WIDTH:
-				setWidth(configuration->camera, configuration->width);
+				setWidth(configuration, configuration->width);
 				break;
 			case OPCODE_GET_WIDTH:
-				getWidth(configuration->camera, &configuration->width);
+				getWidth(configuration, &configuration->width);
 				break;
 			case OPCODE_SET_HEIGHT:
-				setHeight(configuration->camera, configuration->height);
+				setHeight(configuration, configuration->height);
 				break;
 			case OPCODE_GET_HEIGHT:
-				getHeight(configuration->camera, &configuration->height);
+				getHeight(configuration, &configuration->height);
 				break;
 			case OPCODE_SET_OFFSET_X:
-				setOffsetX(configuration->camera, configuration->offsetX);
+				setOffsetX(configuration, configuration->offsetX);
 				break;
 			case OPCODE_GET_OFFSET_X:
-				getOffsetX(configuration->camera, &configuration->offsetX);
+				getOffsetX(configuration, &configuration->offsetX);
 				break;
 			case OPCODE_SET_OFFSET_Y:
-				setOffsetY(configuration->camera, configuration->offsetY);
+				setOffsetY(configuration, configuration->offsetY);
 				break;
 			case OPCODE_GET_OFFSET_Y:
-				getOffsetY(configuration->camera, &configuration->offsetY);
+				getOffsetY(configuration, &configuration->offsetY);
 				break;
 			case OPCODE_GET_SIZE:
-				getSize(configuration->camera, &configuration->size);
+				getSize(configuration, &configuration->size);
 				break;
 			case OPCODE_SET_TRIGGER_SOURCE:
-				setTriggerSource(configuration->camera, configuration->triggerSource);
+				setTriggerSource(configuration, configuration->triggerSource);
 				break;
 			case OPCODE_GET_TRIGGER_SOURCE:
-				getTriggerSource(configuration->camera, &configuration->triggerSource);
+				getTriggerSource(configuration, &configuration->triggerSource);
 				break;
 		}
-
-		printf("%s: Finished processing opcode=%d\r\n", configuration->name, configuration->opcode);
-
 		pthread_cond_signal(&configuration->conditionSignal);
 	}
 
@@ -283,11 +276,16 @@ basler_getImage(basler_t device, uint8_t *buffer, uint32_t size)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].status < 0)
+	{
+		errlogPrintf("\x1B[31mUnable to capture image\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 	pthread_mutex_unlock(&configurations[device].syncMutex);
-
 	/*Unlock camera*/
 	pthread_mutex_unlock(&configurations[device].hardwareMutex);
-
 	return 0;
 }
 
@@ -304,6 +302,14 @@ basler_setGainAuto(basler_t device, bool gainAuto)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to set gain mode: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
@@ -324,6 +330,14 @@ basler_getGainAuto(basler_t device, bool* gainAuto)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to read gain mode: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 
 	*gainAuto	=	configurations[device].gainAuto;
 	pthread_mutex_unlock(&configurations[device].syncMutex);
@@ -346,6 +360,14 @@ basler_setGain(basler_t device, uint32_t gain)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to set gain: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
@@ -366,6 +388,14 @@ basler_getGain(basler_t device, uint32_t* gain)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to read gain: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 
 	*gain	=	configurations[device].gain;
 	pthread_mutex_unlock(&configurations[device].syncMutex);
@@ -389,6 +419,14 @@ basler_setExposure(basler_t device, uint32_t exposure)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to set exposure: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
@@ -409,6 +447,14 @@ basler_getExposure(basler_t device, uint32_t* exposure)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to read exposure: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 
 	*exposure	=	configurations[device].exposure;
 	pthread_mutex_unlock(&configurations[device].syncMutex);
@@ -439,6 +485,14 @@ basler_setWidth(basler_t device, uint32_t width)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to set width: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
@@ -459,6 +513,14 @@ basler_getWidth(basler_t device, uint32_t* width)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to read width: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 
 	*width	=	configurations[device].width;
 	pthread_mutex_unlock(&configurations[device].syncMutex);
@@ -489,6 +551,14 @@ basler_setHeight(basler_t device, uint32_t height)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to set height: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
@@ -509,6 +579,14 @@ basler_getHeight(basler_t device, uint32_t* height)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to read height: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 
 	*height	=	configurations[device].height;
 	pthread_mutex_unlock(&configurations[device].syncMutex);
@@ -539,6 +617,14 @@ basler_setOffsetX(basler_t device, uint32_t offsetX)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to set the x offset: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
@@ -559,6 +645,14 @@ basler_getOffsetX(basler_t device, uint32_t* offsetX)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to read the x offset: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 
 	*offsetX	=	configurations[device].offsetX;
 	pthread_mutex_unlock(&configurations[device].syncMutex);
@@ -589,6 +683,14 @@ basler_setOffsetY(basler_t device, uint32_t offsetY)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to set the y offset: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
@@ -609,6 +711,14 @@ basler_getOffsetY(basler_t device, uint32_t* offsetY)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to read the y offset: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 
 	*offsetY	=	configurations[device].offsetY;
 	pthread_mutex_unlock(&configurations[device].syncMutex);
@@ -630,6 +740,14 @@ basler_getSize(basler_t device, uint32_t* size)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to read image size: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 
 	*size	=	configurations[device].size;
 	pthread_mutex_unlock(&configurations[device].syncMutex);
@@ -653,6 +771,14 @@ basler_setTriggerSource(basler_t device, triggerSource_t source)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to set trigger source: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 	pthread_mutex_unlock(&configurations[device].syncMutex);
 
 	/*Unlock camera*/
@@ -673,6 +799,14 @@ basler_getTriggerSource(basler_t device, triggerSource_t* source)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
+	if (configurations[device].exception)
+	{
+		configurations[device].exception	=	false;
+		errlogPrintf("\x1B[31mUnable to read trigger source: Exception occured!\r\n\x1B[0m");
+		pthread_mutex_unlock(&configurations[device].syncMutex);
+		pthread_mutex_unlock(&configurations[device].hardwareMutex);
+		return -1;
+	}
 
 	*source	=	configurations[device].triggerSource;
 	pthread_mutex_unlock(&configurations[device].syncMutex);
@@ -684,182 +818,319 @@ basler_getTriggerSource(basler_t device, triggerSource_t* source)
 }
 
 
-static void
+static long
 getImage(configuration_t* configuration)
 {
-	configuration->streamGrabber->MaxBufferSize.SetValue(configuration->size);
-	configuration->streamGrabber->MaxNumBuffer.SetValue(1);
-
-	configuration->streamGrabber->PrepareGrab();
-	const StreamBufferHandle hBuffer = configuration->streamGrabber->RegisterBuffer(configuration->buffer, configuration->size);
-	configuration->streamGrabber->QueueBuffer(hBuffer, NULL);
-
-	configuration->camera->AcquisitionStart.Execute();
-	if (configuration->triggerSource == TRIGGER_SOURCE_SOFTWARE)
-		configuration->camera->TriggerSoftware.Execute();
-
-	if (configuration->streamGrabber->GetWaitObject().Wait(3000))
+	try
 	{
-		GrabResult Result;
-		configuration->streamGrabber->RetrieveResult(Result);
+		configuration->streamGrabber->MaxBufferSize.SetValue(configuration->size);
+		configuration->streamGrabber->MaxNumBuffer.SetValue(1);
 
-		if (Result.Succeeded())
-			printf("Gray value of first pixel: %d\r\n", (uint32_t) configuration->buffer[0]);
-		else
-			printf("Error code : %x\r\n", Result.GetErrorCode());
-	}
-	else 
+		configuration->streamGrabber->PrepareGrab();
+		const StreamBufferHandle image	= configuration->streamGrabber->RegisterBuffer(configuration->buffer, configuration->size);
+		configuration->streamGrabber->QueueBuffer(image, NULL);
+
+		configuration->camera->AcquisitionStart.Execute();
+		if (configuration->triggerSource == TRIGGER_SOURCE_SOFTWARE)
+			configuration->camera->TriggerSoftware.Execute();
+
+		if (configuration->streamGrabber->GetWaitObject().Wait(3000))
+		{
+			GrabResult Result;
+			configuration->streamGrabber->RetrieveResult(Result);
+
+			if (Result.Succeeded())
+			{
+				printf("Gray value of first pixel: %d\r\n", (uint32_t) configuration->buffer[0]);
+				configuration->streamGrabber->DeregisterBuffer(image);
+				configuration->streamGrabber->FinishGrab();
+				return 0;
+			}
+			else
+			{
+				printf("Error code : %x\r\n", Result.GetErrorCode());
+				configuration->streamGrabber->DeregisterBuffer(image);
+				configuration->streamGrabber->FinishGrab();
+				return -1;
+			}
+		}
+		else 
+		{
+			printf("Timeout occurred!\r\n");
+			configuration->streamGrabber->CancelGrab();
+			for (GrabResult r; configuration->streamGrabber->RetrieveResult(r););
+			configuration->streamGrabber->DeregisterBuffer(image);
+			configuration->streamGrabber->FinishGrab();
+			return -1;
+		}
+	} catch (GenICam::GenericException &e)
 	{
-		printf("Timeout occurred!\r\n");
-		configuration->streamGrabber->CancelGrab();
-		for (GrabResult r; configuration->streamGrabber->RetrieveResult(r););
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
 	}
-	configuration->streamGrabber->DeregisterBuffer(hBuffer);
-	configuration->streamGrabber->FinishGrab();
 }
 
-static void
-setGainAuto(CBaslerGigECamera* camera, bool gainAuto)
+static long
+setGainAuto(configuration_t* configuration, bool gainAuto)
 {
-	if (gainAuto)
-		camera->GainAuto.SetValue(GainAuto_Continuous);
-	else
-		camera->GainAuto.SetValue(GainAuto_Off);
+	try
+	{
+		if (gainAuto)
+			configuration->camera->GainAuto.SetValue(GainAuto_Continuous);
+		else
+			configuration->camera->GainAuto.SetValue(GainAuto_Off);
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
 }
 
-static void
-getGainAuto(CBaslerGigECamera* camera, bool* gainAuto)
+static long
+getGainAuto(configuration_t* configuration, bool* gainAuto)
 {
 	int gainAutoEnum;
 
-	gainAutoEnum	=	camera->GainAuto.GetValue();
-	if (gainAutoEnum == GainAuto_Off)
-		*gainAuto	=	false;
-	else
-		*gainAuto	=	true;
+	try
+	{
+		gainAutoEnum	=	configuration->camera->GainAuto.GetValue();
+		if (gainAutoEnum == GainAuto_Off)
+			*gainAuto	=	false;
+		else
+			*gainAuto	=	true;
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
 }
 
-static void
-setGain(CBaslerGigECamera* camera, uint32_t gain)
+static long
+setGain(configuration_t* configuration, uint32_t gain)
 {
 	int	gainAutoEnum;
 
-	gainAutoEnum	=	camera->GainAuto.GetValue();
-	if (gainAutoEnum == GainAuto_Off)
+	try
 	{
-		camera->GainSelector.SetValue(GainSelector_All);
-		camera->GainRaw.SetValue(gain);
+		gainAutoEnum	=	configuration->camera->GainAuto.GetValue();
+		if (gainAutoEnum == GainAuto_Off)
+		{
+			configuration->camera->GainSelector.SetValue(GainSelector_All);
+			configuration->camera->GainRaw.SetValue(gain);
+		}
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
 	}
 }
 
-static void
-getGain(CBaslerGigECamera* camera, uint32_t* gain)
+static long
+getGain(configuration_t* configuration, uint32_t* gain)
 {
-	*gain	=	camera->GainRaw.GetValue();
-}
-
-static void
-setExposure(CBaslerGigECamera* camera, uint32_t exposure)
-{
-	if (exposure < 16)
-		exposure = 16;
-
-	camera->ExposureMode.SetValue(ExposureMode_Timed);
-	camera->ExposureTimeAbs.SetValue(exposure);
-}
-
-static void
-getExposure(CBaslerGigECamera* camera, uint32_t* exposure)
-{
-	*exposure	=	camera->ExposureTimeAbs.GetValue();
-}
-
-static void
-setWidth(CBaslerGigECamera* camera, uint32_t width)
-{
-	camera->Width.SetValue(width);
-}
-
-static void
-getWidth(CBaslerGigECamera* camera, uint32_t* width)
-{
-	*width	=	camera->Width.GetValue();
-}
-
-static void
-setHeight(CBaslerGigECamera* camera, uint32_t height)
-{
-	camera->Height.SetValue(height);
-}
-
-static void
-getHeight(CBaslerGigECamera* camera, uint32_t* height)
-{
-	*height	=	camera->Height.GetValue();
-}
-
-static void
-setOffsetX(CBaslerGigECamera* camera, uint32_t offsetX)
-{
-	camera->OffsetX.SetValue(offsetX);
-}
-
-static void
-getOffsetX(CBaslerGigECamera* camera, uint32_t* offsetX)
-{
-	*offsetX	=	camera->OffsetX.GetValue();
-}
-
-static void
-setOffsetY(CBaslerGigECamera* camera, uint32_t offsetY)
-{
-	camera->OffsetY.SetValue(offsetY);
-}
-
-static void
-getOffsetY(CBaslerGigECamera* camera, uint32_t* offsetY)
-{
-	*offsetY	=	camera->OffsetY.GetValue();
-}
-
-static void
-getSize(CBaslerGigECamera* camera, uint32_t* size)
-{
-	*size	=	camera->Width.GetValue()*camera->Height.GetValue();
-}
-
-static void
-setTriggerSource(CBaslerGigECamera* camera, triggerSource_t source)
-{
-	switch (source)
+	try
 	{
-		case TRIGGER_SOURCE_SOFTWARE:
-			camera->TriggerSource.SetValue(TriggerSource_Software);
-			break;
-		case TRIGGER_SOURCE_HARDWARE:
-			camera->TriggerSource.SetValue(TriggerSource_Line1);
-			camera->TriggerActivation.SetValue(TriggerActivation_RisingEdge);
-			break;
-		default:
-			camera->TriggerSource.SetValue(TriggerSource_Software);
-			break;
+		*gain	=	configuration->camera->GainRaw.GetValue();
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
 	}
 }
 
-static void
-getTriggerSource(CBaslerGigECamera* camera, triggerSource_t* source)
+static long
+setExposure(configuration_t* configuration, uint32_t exposure)
 {
-	switch (camera->TriggerSource.GetValue())
+	try
 	{
-		case TriggerSource_Software:
-			*source	=	TRIGGER_SOURCE_SOFTWARE;
-			break;
-		case TriggerSource_Line1:
-			*source	=	TRIGGER_SOURCE_HARDWARE;
-			break;
-		default:
-			*source	=	TRIGGER_SOURCE_SOFTWARE;
-			break;
+		if (exposure < 16)
+			exposure = 16;
+
+		configuration->camera->ExposureMode.SetValue(ExposureMode_Timed);
+		configuration->camera->ExposureTimeAbs.SetValue(exposure);
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
+}
+
+static long
+getExposure(configuration_t* configuration, uint32_t* exposure)
+{
+	try
+	{
+		*exposure	=	configuration->camera->ExposureTimeAbs.GetValue();
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
+}
+
+static long
+setWidth(configuration_t* configuration, uint32_t width)
+{
+	try
+	{
+		configuration->camera->Width.SetValue(width);
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
+}
+
+static long
+getWidth(configuration_t* configuration, uint32_t* width)
+{
+	try
+	{
+		*width	=	configuration->camera->Width.GetValue();
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
+}
+
+static long
+setHeight(configuration_t* configuration, uint32_t height)
+{
+	try
+	{
+		configuration->camera->Height.SetValue(height);
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
+}
+
+static long
+getHeight(configuration_t* configuration, uint32_t* height)
+{
+	try
+	{
+		*height	=	configuration->camera->Height.GetValue();
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
+}
+
+static long
+setOffsetX(configuration_t* configuration, uint32_t offsetX)
+{
+	try
+	{
+		configuration->camera->OffsetX.SetValue(offsetX);
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
+}
+
+static long
+getOffsetX(configuration_t* configuration, uint32_t* offsetX)
+{
+	try
+	{
+		*offsetX	=	configuration->camera->OffsetX.GetValue();
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
+}
+
+static long
+setOffsetY(configuration_t* configuration, uint32_t offsetY)
+{
+	try
+	{
+		configuration->camera->OffsetY.SetValue(offsetY);
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
+}
+
+static long
+getOffsetY(configuration_t* configuration, uint32_t* offsetY)
+{
+	try
+	{
+		*offsetY	=	configuration->camera->OffsetY.GetValue();
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
+}
+
+static long
+getSize(configuration_t* configuration, uint32_t* size)
+{
+	try
+	{
+		*size	=	configuration->camera->Width.GetValue()*configuration->camera->Height.GetValue();
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
+}
+
+static long
+setTriggerSource(configuration_t* configuration, triggerSource_t source)
+{
+	try
+	{
+		switch (source)
+		{
+			case TRIGGER_SOURCE_SOFTWARE:
+				configuration->camera->TriggerSource.SetValue(TriggerSource_Software);
+				break;
+			case TRIGGER_SOURCE_HARDWARE:
+				configuration->camera->TriggerSource.SetValue(TriggerSource_Line1);
+				configuration->camera->TriggerActivation.SetValue(TriggerActivation_RisingEdge);
+				break;
+			default:
+				configuration->camera->TriggerSource.SetValue(TriggerSource_Software);
+				break;
+		}
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
+	}
+}
+
+static long
+getTriggerSource(configuration_t* configuration, triggerSource_t* source)
+{
+	try
+	{
+		switch (configuration->camera->TriggerSource.GetValue())
+		{
+			case TriggerSource_Software:
+				*source	=	TRIGGER_SOURCE_SOFTWARE;
+				break;
+			case TriggerSource_Line1:
+				*source	=	TRIGGER_SOURCE_HARDWARE;
+				break;
+			default:
+				*source	=	TRIGGER_SOURCE_SOFTWARE;
+				break;
+		}
+	} catch (GenICam::GenericException &e)
+	{
+		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		return -1;
 	}
 }
 
@@ -875,6 +1146,22 @@ report(int detail)
 	}
 	return 0;
 }
+
+basler_t
+basler_open(char *deviceName)
+{
+	basler_t device;
+
+	for (device = 0; device < deviceCount; device++)
+	{
+		if (strcmp(configurations[device].name, deviceName) == 0)
+			return (basler_t)device;
+	}
+
+    errlogPrintf("\x1B[31mUnable to open device: device %s not found\r\n\x1B[0m", deviceName);
+	return -1;
+}
+
 
 /*
  * Configuration and registration functions and variables
