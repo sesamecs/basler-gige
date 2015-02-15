@@ -56,8 +56,8 @@ typedef struct
 	pthread_mutex_t						hardwareMutex;	
 	pthread_mutex_t						syncMutex;
 	pthread_cond_t						conditionSignal;
-	int									status;
 	opcode_t							opcode;
+	int32_t								status;
 	uint8_t*							buffer;
 	bool								gainAuto;
 	uint32_t							gain;
@@ -194,7 +194,6 @@ thread(void* arg)
 		/*Wait for command*/
 		pthread_cond_wait(&configuration->conditionSignal, &configuration->syncMutex);
 
-		printf("Received command %d\r\n", configuration->opcode);
 
 		/*Execute command*/
 		switch (configuration->opcode)
@@ -218,40 +217,40 @@ thread(void* arg)
 				configuration->status	=	setExposure(configuration, configuration->exposure);
 				break;
 			case OPCODE_GET_EXPOSURE:
-				getExposure(configuration, &configuration->exposure);
+				configuration->status	=	getExposure(configuration, &configuration->exposure);
 				break;
 			case OPCODE_SET_WIDTH:
-				setWidth(configuration, configuration->width);
+				configuration->status	=	setWidth(configuration, configuration->width);
 				break;
 			case OPCODE_GET_WIDTH:
-				getWidth(configuration, &configuration->width);
+				configuration->status	=	getWidth(configuration, &configuration->width);
 				break;
 			case OPCODE_SET_HEIGHT:
-				setHeight(configuration, configuration->height);
+				configuration->status	=	setHeight(configuration, configuration->height);
 				break;
 			case OPCODE_GET_HEIGHT:
-				getHeight(configuration, &configuration->height);
+				configuration->status	=	getHeight(configuration, &configuration->height);
 				break;
 			case OPCODE_SET_OFFSET_X:
-				setOffsetX(configuration, configuration->offsetX);
+				configuration->status	=	setOffsetX(configuration, configuration->offsetX);
 				break;
 			case OPCODE_GET_OFFSET_X:
-				getOffsetX(configuration, &configuration->offsetX);
+				configuration->status	=	getOffsetX(configuration, &configuration->offsetX);
 				break;
 			case OPCODE_SET_OFFSET_Y:
-				setOffsetY(configuration, configuration->offsetY);
+				configuration->status	=	setOffsetY(configuration, configuration->offsetY);
 				break;
 			case OPCODE_GET_OFFSET_Y:
-				getOffsetY(configuration, &configuration->offsetY);
+				configuration->status	=	getOffsetY(configuration, &configuration->offsetY);
 				break;
 			case OPCODE_GET_SIZE:
-				getSize(configuration, &configuration->size);
+				configuration->status	=	getSize(configuration, &configuration->size);
 				break;
 			case OPCODE_SET_TRIGGER_SOURCE:
-				setTriggerSource(configuration, configuration->triggerSource);
+				configuration->status	=	setTriggerSource(configuration, configuration->triggerSource);
 				break;
 			case OPCODE_GET_TRIGGER_SOURCE:
-				getTriggerSource(configuration, &configuration->triggerSource);
+				configuration->status	=	getTriggerSource(configuration, &configuration->triggerSource);
 				break;
 		}
 		pthread_cond_signal(&configuration->conditionSignal);
@@ -302,9 +301,8 @@ basler_setGainAuto(basler_t device, bool gainAuto)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to set gain mode: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -330,9 +328,8 @@ basler_getGainAuto(basler_t device, bool* gainAuto)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to read gain mode: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -360,9 +357,8 @@ basler_setGain(basler_t device, uint32_t gain)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to set gain: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -388,9 +384,8 @@ basler_getGain(basler_t device, uint32_t* gain)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to read gain: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -419,9 +414,8 @@ basler_setExposure(basler_t device, uint32_t exposure)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to set exposure: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -447,9 +441,8 @@ basler_getExposure(basler_t device, uint32_t* exposure)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to read exposure: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -485,9 +478,8 @@ basler_setWidth(basler_t device, uint32_t width)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to set width: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -513,9 +505,8 @@ basler_getWidth(basler_t device, uint32_t* width)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to read width: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -551,9 +542,8 @@ basler_setHeight(basler_t device, uint32_t height)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to set height: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -579,9 +569,8 @@ basler_getHeight(basler_t device, uint32_t* height)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to read height: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -617,9 +606,8 @@ basler_setOffsetX(basler_t device, uint32_t offsetX)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to set the x offset: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -645,9 +633,8 @@ basler_getOffsetX(basler_t device, uint32_t* offsetX)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to read the x offset: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -683,9 +670,8 @@ basler_setOffsetY(basler_t device, uint32_t offsetY)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to set the y offset: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -711,9 +697,8 @@ basler_getOffsetY(basler_t device, uint32_t* offsetY)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to read the y offset: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -740,9 +725,8 @@ basler_getSize(basler_t device, uint32_t* size)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to read image size: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -771,9 +755,8 @@ basler_setTriggerSource(basler_t device, triggerSource_t source)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to set trigger source: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -799,9 +782,8 @@ basler_getTriggerSource(basler_t device, triggerSource_t* source)
 	pthread_mutex_lock(&configurations[device].syncMutex);
 	pthread_cond_signal(&configurations[device].conditionSignal);
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
-	if (configurations[device].exception)
+	if (configurations[device].status < 0)
 	{
-		configurations[device].exception	=	false;
 		errlogPrintf("\x1B[31mUnable to read trigger source: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
@@ -868,6 +850,7 @@ getImage(configuration_t* configuration)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -884,6 +867,7 @@ setGainAuto(configuration_t* configuration, bool gainAuto)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -903,6 +887,7 @@ getGainAuto(configuration_t* configuration, bool* gainAuto)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -923,6 +908,7 @@ setGain(configuration_t* configuration, uint32_t gain)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -936,6 +922,7 @@ getGain(configuration_t* configuration, uint32_t* gain)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -953,6 +940,7 @@ setExposure(configuration_t* configuration, uint32_t exposure)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -966,6 +954,7 @@ getExposure(configuration_t* configuration, uint32_t* exposure)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -979,6 +968,7 @@ setWidth(configuration_t* configuration, uint32_t width)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -992,6 +982,7 @@ getWidth(configuration_t* configuration, uint32_t* width)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -1005,6 +996,7 @@ setHeight(configuration_t* configuration, uint32_t height)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -1018,6 +1010,7 @@ getHeight(configuration_t* configuration, uint32_t* height)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -1031,6 +1024,7 @@ setOffsetX(configuration_t* configuration, uint32_t offsetX)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -1044,6 +1038,7 @@ getOffsetX(configuration_t* configuration, uint32_t* offsetX)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -1057,6 +1052,7 @@ setOffsetY(configuration_t* configuration, uint32_t offsetY)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -1070,6 +1066,7 @@ getOffsetY(configuration_t* configuration, uint32_t* offsetY)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -1083,6 +1080,7 @@ getSize(configuration_t* configuration, uint32_t* size)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -1108,6 +1106,7 @@ setTriggerSource(configuration_t* configuration, triggerSource_t source)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long
@@ -1132,6 +1131,7 @@ getTriggerSource(configuration_t* configuration, triggerSource_t* source)
 		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
 		return -1;
 	}
+	return 0;
 }
 
 static long

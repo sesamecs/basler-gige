@@ -4,7 +4,7 @@ include $(TOP)/configure/CONFIG
 
 INCLUDES					+=	-I../pylon3/genicam/library/CPP/include -I../pylon3/include -DUSE_GIGE
 CFLAGS						+=	-Wno-switch -Wno-unknown-pragmas -Wno-unused
-CXXFLAGS					+=	-Wno-switch -Wno-unknown-pragmas -Wno-unused
+CXXFLAGS					+=	-v -v -Wno-switch -Wno-unknown-pragmas -Wno-unused
 
 # Library
 LIBRARY_IOC					=	basler
