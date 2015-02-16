@@ -181,7 +181,7 @@ thread(void* arg)
 		configuration->streamGrabber->Open();
 	} catch (GenICam::GenericException &e)
 	{
-		errlogPrintf("\x1B[31mException: %s\r\n\x1B[0m", e.GetDescription());
+		errlogPrintf("\x1B[31mException: %s\x1B[0m", e.GetDescription());
 		configuration->status	=	-1;
 	}
 
@@ -303,7 +303,6 @@ basler_setGainAuto(basler_t device, bool gainAuto)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to set gain mode: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -330,7 +329,6 @@ basler_getGainAuto(basler_t device, bool* gainAuto)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to read gain mode: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -359,7 +357,6 @@ basler_setGain(basler_t device, uint32_t gain)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to set gain: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -386,7 +383,6 @@ basler_getGain(basler_t device, uint32_t* gain)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to read gain: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -416,7 +412,6 @@ basler_setExposure(basler_t device, uint32_t exposure)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to set exposure: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -443,7 +438,6 @@ basler_getExposure(basler_t device, uint32_t* exposure)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to read exposure: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -480,7 +474,6 @@ basler_setWidth(basler_t device, uint32_t width)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to set width: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -507,7 +500,6 @@ basler_getWidth(basler_t device, uint32_t* width)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to read width: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -544,7 +536,6 @@ basler_setHeight(basler_t device, uint32_t height)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to set height: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -571,7 +562,6 @@ basler_getHeight(basler_t device, uint32_t* height)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to read height: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -608,7 +598,6 @@ basler_setOffsetX(basler_t device, uint32_t offsetX)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to set the x offset: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -635,7 +624,6 @@ basler_getOffsetX(basler_t device, uint32_t* offsetX)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to read the x offset: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -672,7 +660,6 @@ basler_setOffsetY(basler_t device, uint32_t offsetY)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to set the y offset: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -699,7 +686,6 @@ basler_getOffsetY(basler_t device, uint32_t* offsetY)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to read the y offset: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -727,7 +713,6 @@ basler_getSize(basler_t device, uint32_t* size)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to read image size: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -757,7 +742,6 @@ basler_setTriggerSource(basler_t device, triggerSource_t source)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to set trigger source: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -784,7 +768,6 @@ basler_getTriggerSource(basler_t device, triggerSource_t* source)
 	pthread_cond_wait(&configurations[device].conditionSignal, &configurations[device].syncMutex);
 	if (configurations[device].status < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to read trigger source: Exception occured!\r\n\x1B[0m");
 		pthread_mutex_unlock(&configurations[device].syncMutex);
 		pthread_mutex_unlock(&configurations[device].hardwareMutex);
 		return -1;
@@ -803,6 +786,9 @@ basler_getTriggerSource(basler_t device, triggerSource_t* source)
 static long
 getImage(configuration_t* configuration)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		configuration->streamGrabber->MaxBufferSize.SetValue(configuration->size);
@@ -830,7 +816,7 @@ getImage(configuration_t* configuration)
 			}
 			else
 			{
-				printf("Error code : %x\r\n", Result.GetErrorCode());
+				errlogPrintf("\x1B[31mError code : %x\r\n\x1B[30m", Result.GetErrorCode());
 				configuration->streamGrabber->DeregisterBuffer(image);
 				configuration->streamGrabber->FinishGrab();
 				return -1;
@@ -838,7 +824,7 @@ getImage(configuration_t* configuration)
 		}
 		else 
 		{
-			printf("Timeout occurred!\r\n");
+			errlogPrintf("\x1B[31mTimeout occured!\r\n\x1B[30m");
 			configuration->streamGrabber->CancelGrab();
 			for (GrabResult r; configuration->streamGrabber->RetrieveResult(r););
 			configuration->streamGrabber->DeregisterBuffer(image);
@@ -856,6 +842,9 @@ getImage(configuration_t* configuration)
 static long
 setGainAuto(configuration_t* configuration, bool gainAuto)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		if (gainAuto)
@@ -874,6 +863,9 @@ static long
 getGainAuto(configuration_t* configuration, bool* gainAuto)
 {
 	int gainAutoEnum;
+
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
 
 	try
 	{
@@ -895,6 +887,9 @@ setGain(configuration_t* configuration, uint32_t gain)
 {
 	int	gainAutoEnum;
 
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		gainAutoEnum	=	configuration->camera->GainAuto.GetValue();
@@ -914,6 +909,9 @@ setGain(configuration_t* configuration, uint32_t gain)
 static long
 getGain(configuration_t* configuration, uint32_t* gain)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		*gain	=	configuration->camera->GainRaw.GetValue();
@@ -928,6 +926,9 @@ getGain(configuration_t* configuration, uint32_t* gain)
 static long
 setExposure(configuration_t* configuration, uint32_t exposure)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		if (exposure < 16)
@@ -946,6 +947,9 @@ setExposure(configuration_t* configuration, uint32_t exposure)
 static long
 getExposure(configuration_t* configuration, uint32_t* exposure)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		*exposure	=	configuration->camera->ExposureTimeAbs.GetValue();
@@ -960,6 +964,9 @@ getExposure(configuration_t* configuration, uint32_t* exposure)
 static long
 setWidth(configuration_t* configuration, uint32_t width)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		configuration->camera->Width.SetValue(width);
@@ -974,6 +981,9 @@ setWidth(configuration_t* configuration, uint32_t width)
 static long
 getWidth(configuration_t* configuration, uint32_t* width)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		*width	=	configuration->camera->Width.GetValue();
@@ -988,6 +998,9 @@ getWidth(configuration_t* configuration, uint32_t* width)
 static long
 setHeight(configuration_t* configuration, uint32_t height)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		configuration->camera->Height.SetValue(height);
@@ -1002,6 +1015,9 @@ setHeight(configuration_t* configuration, uint32_t height)
 static long
 getHeight(configuration_t* configuration, uint32_t* height)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		*height	=	configuration->camera->Height.GetValue();
@@ -1016,6 +1032,9 @@ getHeight(configuration_t* configuration, uint32_t* height)
 static long
 setOffsetX(configuration_t* configuration, uint32_t offsetX)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		configuration->camera->OffsetX.SetValue(offsetX);
@@ -1030,6 +1049,9 @@ setOffsetX(configuration_t* configuration, uint32_t offsetX)
 static long
 getOffsetX(configuration_t* configuration, uint32_t* offsetX)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		*offsetX	=	configuration->camera->OffsetX.GetValue();
@@ -1044,6 +1066,9 @@ getOffsetX(configuration_t* configuration, uint32_t* offsetX)
 static long
 setOffsetY(configuration_t* configuration, uint32_t offsetY)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		configuration->camera->OffsetY.SetValue(offsetY);
@@ -1058,6 +1083,9 @@ setOffsetY(configuration_t* configuration, uint32_t offsetY)
 static long
 getOffsetY(configuration_t* configuration, uint32_t* offsetY)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		*offsetY	=	configuration->camera->OffsetY.GetValue();
@@ -1072,6 +1100,9 @@ getOffsetY(configuration_t* configuration, uint32_t* offsetY)
 static long
 getSize(configuration_t* configuration, uint32_t* size)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		*size	=	configuration->camera->Width.GetValue()*configuration->camera->Height.GetValue();
@@ -1086,6 +1117,9 @@ getSize(configuration_t* configuration, uint32_t* size)
 static long
 setTriggerSource(configuration_t* configuration, triggerSource_t source)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		switch (source)
@@ -1112,6 +1146,9 @@ setTriggerSource(configuration_t* configuration, triggerSource_t source)
 static long
 getTriggerSource(configuration_t* configuration, triggerSource_t* source)
 {
+	if (!configuration || !configuration->camera || !configuration->streamGrabber)
+		return -1;
+
 	try
 	{
 		switch (configuration->camera->TriggerSource.GetValue())

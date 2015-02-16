@@ -59,13 +59,13 @@ initRecord(longoutRecord *record)
 
 	if (outputCount == NUMBER_OF_OUTPUTS)
 	{
-		errlogPrintf("Unable to initialize %s: Too many records\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to initialize %s: Too many records\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
     if (record->out.type != INST_IO) 
 	{
-		errlogPrintf("Unable to initialize %s: Illegal output type\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to initialize %s: Illegal output type\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
@@ -78,7 +78,7 @@ initRecord(longoutRecord *record)
 	nameLength		=	strcspn(parameters, ":");		
 	if (nameLength == 0)
 	{
-		errlogPrintf("Unable to initialize %s: Illegal output device name\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to initialize %s: Illegal output device name\r\n\x1B[0m", record->name);
 		return -1;
 	}
 	memcpy(outputs[outputCount].name, parameters, nameLength);
@@ -90,17 +90,16 @@ initRecord(longoutRecord *record)
     /* Parse command*/
 	if (strlen(parameters) == 0)
 	{
-		errlogPrintf("Unable to initialize %s: Illegal output command\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to initialize %s: Illegal output command\r\n\x1B[0m", record->name);
 		return -1;
 	}
 	strcpy(outputs[outputCount].command, parameters);
-	printf("%s connects to %s and issues %s command\r\n", record->name, outputs[outputCount].name, outputs[outputCount].command);
 
 	/* Set device*/
 	outputs[outputCount].device	=	basler_open(outputs[outputCount].name);
 	if (outputs[outputCount].device < 0)
 	{
-		errlogPrintf("Unable to initalize %s: Could not open device\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to initalize %s: Could not open device\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
@@ -119,19 +118,19 @@ writeRecord(longoutRecord *record)
 
 	if (!record)
 	{
-		errlogPrintf("Unable to write %s: Null record pointer\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to write %s: Null record pointer\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
     if (!private)
     {
-        errlogPrintf("Unable to write %s: Null private structure pointer\r\n", record->name);
+        errlogPrintf("\x1B[31mUnable to write %s: Null private structure pointer\r\n\x1B[0m", record->name);
         return -1;
     }
 
 	if (!private->command || !strlen(private->command))
 	{
-		errlogPrintf("Unable to write %s: Command is null or empty\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to write %s: Command is null or empty\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
@@ -145,7 +144,7 @@ writeRecord(longoutRecord *record)
 		status	=	pthread_create(&handle, NULL, thread, (void*)record);	
 		if (status)
 		{
-			errlogPrintf("Unable to write %s: Unable to create thread\r\n", record->name);
+			errlogPrintf("\x1B[31mUnable to write %s: Unable to create thread\r\n\x1B[0m", record->name);
 			return -1;
 		}
 		record->pact = true;
@@ -156,7 +155,6 @@ writeRecord(longoutRecord *record)
 	 * This is the second pass, complete the request and return
 	 */
 	record->pact	=	false;
-	printf("Wrote %s.VAL=%d\r\n", record->name, record->val);
 	return 0;
 }
 
@@ -183,9 +181,9 @@ thread(void* arg)
 	else if (strcmp(private->command, "setOffsetY") == 0)
 		status	=	basler_setOffsetY(private->device, record->val);
 	else
-		errlogPrintf("Unable to write %s: Do not know how to process \"%s\" requested by %s\r\n", record->name, private->command, record->name);
+		errlogPrintf("\x1B[31mUnable to write %s: Do not know how to process %s requested by %s\r\n\x1B[0m", record->name, private->command, record->name);
 	if (status < 0)
-		errlogPrintf("Unable to write %s: Driver thread is unable to write\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to write %s: Driver thread is unable to write\r\n\x1B[0m", record->name);
 
 	/*Process record*/
 	dbScanLock((struct dbCommon*)record);

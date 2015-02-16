@@ -59,13 +59,13 @@ initRecord(biRecord *record)
 
 	if (inputCount == NUMBER_OF_INPUTS)
 	{
-		errlogPrintf("Unable to initialize %s: Too many records\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to initialize %s: Too many records\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
     if (record->inp.type != INST_IO) 
 	{
-		errlogPrintf("Unable to initialize %s: Illegal input type\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to initialize %s: Illegal input type\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
@@ -78,7 +78,7 @@ initRecord(biRecord *record)
 	nameLength		=	strcspn(parameters, ":");		
 	if (nameLength == 0)
 	{
-		errlogPrintf("Unable to initialize %s: Illegal input device name\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to initialize %s: Illegal input device name\r\n\x1B[0m", record->name);
 		return -1;
 	}
 	memcpy(inputs[inputCount].name, parameters, nameLength);
@@ -90,17 +90,16 @@ initRecord(biRecord *record)
     /* Parse command*/
 	if (strlen(parameters) == 0)
 	{
-		errlogPrintf("Unable to initialize %s: Illegal input command\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to initialize %s: Illegal input command\r\n\x1B[0m", record->name);
 		return -1;
 	}
 	strcpy(inputs[inputCount].command, parameters);
-	printf("%s connects to %s and issues %s command\r\n", record->name, inputs[inputCount].name, inputs[inputCount].command);
 
 	/* Set device*/
 	inputs[inputCount].device	=	basler_open(inputs[inputCount].name);
 	if (inputs[inputCount].device < 0)
 	{
-		errlogPrintf("Unable to initalize %s: Could not open device\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to initalize %s: Could not open device\r\n\x1B[0m", record->name);
 		return -1;
 	}
 	record->dpvt				=	&inputs[inputCount];
@@ -118,19 +117,19 @@ readRecord(biRecord *record)
 
 	if (!record)
 	{
-		errlogPrintf("Unable to read %s: Null record pointer\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to read %s: Null record pointer\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
     if (!private)
     {
-        errlogPrintf("Unable to read %s: Null private structure pointer\r\n", record->name);
+        errlogPrintf("\x1B[31mUnable to read %s: Null private structure pointer\r\n\x1B[0m", record->name);
         return -1;
     }
 
 	if (!private->command || !strlen(private->command))
 	{
-		errlogPrintf("Unable to read %s: Command is null or empty\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to read %s: Command is null or empty\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
@@ -144,7 +143,7 @@ readRecord(biRecord *record)
 		status	=	pthread_create(&handle, NULL, thread, (void*)record);	
 		if (status)
 		{
-			errlogPrintf("Unable to read %s: Unable to create thread\r\n", record->name);
+			errlogPrintf("\x1B[31mUnable to read %s: Unable to create thread\r\n\x1B[0m", record->name);
 			return -1;
 		}
 		record->pact = true;
@@ -156,8 +155,6 @@ readRecord(biRecord *record)
 	 * Set UDF to false if VAL has been updated
 	 */
 	record->pact	=	false;
-
-	printf("%s.RVAL=%u\r\n", record->name, record->rval);
 
 	return 0;
 }
@@ -177,9 +174,9 @@ thread(void* arg)
 	else if (strcmp(private->command, "getGainAuto") == 0)
 		status	=	basler_getGainAuto(private->device, (bool*)&record->rval);
 	else
-		errlogPrintf("Unable to read %s: Do not know how to process \"%s\" requested by %s\r\n", record->name, private->command, record->name);
+		errlogPrintf("\x1B[31mUnable to read %s: Do not know how to process %s requested by %s\r\n\x1B[0m", record->name, private->command, record->name);
 	if (status < 0)
-		errlogPrintf("Unable to read %s: Driver thread is unable to read\r\n", record->name);
+		errlogPrintf("\x1B[31mUnable to read %s: Driver thread is unable to read\r\n\x1B[0m", record->name);
 
 	/*Process record*/
 	dbScanLock((struct dbCommon*)record);
