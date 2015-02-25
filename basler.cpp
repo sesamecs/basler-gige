@@ -33,7 +33,7 @@
 #include <pylon/gige/BaslerGigECamera.h>
 #include <pylon/gige/BaslerGigECamera.h>
 
-#include "drvBasler.h"
+#include "basler.h"
 
 using namespace std;
 using namespace Basler_GigECameraParams;

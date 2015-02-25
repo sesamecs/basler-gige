@@ -1,9 +1,9 @@
 #!O.linux-x86/baslerApp
-dbLoadDatabase O.Common/baslerApp.dbd
+dbLoadDatabase ../dbd/baslerApp.dbd
 baslerApp_registerRecordDeviceDriver
 
-dbLoadRecords O.Common/basler.db
+dbLoadRecords ../db/basler.db
 
-baslerConfigure "C1" "10.2.1.162"
+baslerConfigure "C1" "10.2.1.108"
 
 iocInit

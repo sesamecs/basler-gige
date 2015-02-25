@@ -32,10 +32,10 @@
 #include <errlog.h>
 #include <dbAccess.h>
 #include <recSup.h>
-#include <waveformRecord.h>
+#include <longinRecord.h>
 
 /*Application includes*/
-#include "drvBasler.h"
+#include "basler.h"
 
 /*Macros*/
 #define NUMBER_OF_INPUTS	100
@@ -54,10 +54,10 @@ static	input_t			inputs[NUMBER_OF_INPUTS];
 static	int				inputCount;
 
 /*Function prototypes*/
-static	long			init(int after);
-static	long			initRecord(waveformRecord *record);
-static 	long			readRecord(waveformRecord *record);
-static	void*			thread(void* arg);
+static	long	init(int after);
+static	long	initRecord(longinRecord *record);
+static 	long	readRecord(longinRecord *record);
+static	void*	thread(void* arg);
 
 /*Function definitions*/
 static long
@@ -69,9 +69,9 @@ init(int after)
 }
 
 static long 
-initRecord(waveformRecord *record)
+initRecord(longinRecord *record)
 {
-	char	*parameters;
+	char*	parameters;
 	int		nameLength;
 
 	if (inputCount == NUMBER_OF_INPUTS)
@@ -104,8 +104,8 @@ initRecord(waveformRecord *record)
 	/* Skip separator*/
     parameters	+= 	nameLength + 1;
 
-	/*Check and read command*/
-	if (!strlen(parameters))
+    /* Parse command*/
+	if (strlen(parameters) == 0)
 	{
 		errlogPrintf("\x1B[31mUnable to initialize %s: Illegal input command\r\n\x1B[0m", record->name);
 		return -1;
@@ -126,9 +126,9 @@ initRecord(waveformRecord *record)
 }
 
 static long 
-readRecord(waveformRecord *record)
+readRecord(longinRecord *record)
 {
-	int			status, fd, n;
+	int			status;
 	pthread_t	handle;
 	input_t*	private	=	(input_t*)record->dpvt;
 
@@ -138,14 +138,16 @@ readRecord(waveformRecord *record)
 		errlogPrintf("\x1B[31mUnable to read %s: Null record pointer\r\n\x1B[0m", record->name);
 		return -1;
 	}
+
     if (!private)
     {
         errlogPrintf("\x1B[31mUnable to read %s: Null private structure pointer\r\n\x1B[0m", record->name);
         return -1;
     }
-	if (!record->bptr)
+
+	if (!private->command || !strlen(private->command))
 	{
-		errlogPrintf("\x1B[31mUnable to read %s: Null array pointer\r\n\x1B[0m", record->name);
+		errlogPrintf("\x1B[31mUnable to read %s: Command is null or empty\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
@@ -168,25 +170,10 @@ readRecord(waveformRecord *record)
 
 	/*
 	 * This is the second pass, complete the request and return
+	 * Set UDF to false if VAL has been updated
 	 */
 	record->pact	=	false;
-
-#if 0
-	/*Create file*/
-	fd	=	open("image.pgm", O_CREAT | O_RDWR);
-	if (fd < 0)
-		perror("open");
-	/*Write image header*/
-	n	=	write(fd, "P5\n1296 966\n255\n", strlen("P5\n1296 966\n255\n"));
-	if (n < strlen("P5\n1296 966\n255\n"))
-		perror("write");
-	/*Dump image binary*/
-	n	=	write(fd, record->bptr, record->nelm);
-	if (n < record->nelm)
-		perror("write");
-	/*Close file*/
-	close(fd);
-#endif
+	record->udf		=	false;
 
 	return 0;
 }
@@ -195,22 +182,30 @@ void*
 thread(void* arg)
 {
 	int				status	=	0;
-	uint32_t		size;
-	waveformRecord*	record	=	(waveformRecord*)arg;
+	longinRecord*	record	=	(longinRecord*)arg;
 	input_t*		private	=	(input_t*)record->dpvt;
 
 	/*Detach thread*/
 	pthread_detach(pthread_self());
 
-	status	=	basler_getSize(private->device, &size);
+	if (strcmp(private->command, "getGain") == 0)
+		status	=	basler_getGain(private->device, (uint32_t*)&record->val);
+	else if (strcmp(private->command, "getExposure") == 0)
+		status	=	basler_getExposure(private->device, (uint32_t*)&record->val);
+	else if (strcmp(private->command, "getWidth") == 0)
+		status	=	basler_getWidth(private->device, (uint32_t*)&record->val);
+	else if (strcmp(private->command, "getHeight") == 0)
+		status	=	basler_getHeight(private->device, (uint32_t*)&record->val);
+	else if (strcmp(private->command, "getOffsetX") == 0)
+		status	=	basler_getOffsetX(private->device, (uint32_t*)&record->val);
+	else if (strcmp(private->command, "getOffsetY") == 0)
+		status	=	basler_getOffsetY(private->device, (uint32_t*)&record->val);
+	else if (strcmp(private->command, "getSize") == 0)
+		status	=	basler_getSize(private->device, (uint32_t*)&record->val);
+	else
+		errlogPrintf("\x1B[31mUnable to read %s: Do not know how to process %s requested by %s\r\n\x1B[0m", record->name, private->command, record->name);
 	if (status < 0)
 		errlogPrintf("\x1B[31mUnable to read %s: Driver thread is unable to read\r\n\x1B[0m", record->name);
-	status	=	basler_getImage(private->device, record->bptr, size);
-	if (status < 0)
-		errlogPrintf("\x1B[31mUnable to read %s: Driver thread is unable to read\r\n\x1B[0m", record->name);
-
-	record->nord	=	size;
-	record->val		=	record->bptr;
 
 	/*Process record*/
 	dbScanLock((struct dbCommon*)record);
@@ -227,7 +222,7 @@ struct devsup {
     DEVSUPFUN init_record;
     DEVSUPFUN get_ioint_info;
     DEVSUPFUN io;
-} devWaveformBasler =
+} devLonginBasler =
 {
     5,
     NULL,
@@ -236,4 +231,4 @@ struct devsup {
     NULL,
     readRecord
 };
-epicsExportAddress(dset, devWaveformBasler);
+epicsExportAddress(dset, devLonginBasler);

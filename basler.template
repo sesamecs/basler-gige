@@ -5,7 +5,7 @@
 record(waveform,"$(DEVICE):getImage")
 {
 	field(DESC,	"Captures a single frame")
-	field(SCAN, ".1 second")
+	field(SCAN, "1 second")
 	field(DTYP, "basler")
 	field(INP,  "@$(CAMERA):getImage")
 	field(FTVL, "UCHAR")
@@ -55,7 +55,7 @@ record(longin, "$(DEVICE):getHeight")
 
 record(bo, "$(DEVICE):setGainAuto")
 {
-	field(DESC, "Controls automatic gain")
+	field(DESC, "Control auto gain")
 	field(DTYP, "basler")
 	field(OUT,  "@$(CAMERA):setGainAuto")
 
@@ -65,7 +65,7 @@ record(bo, "$(DEVICE):setGainAuto")
 
 record(bi, "$(DEVICE):getGainAuto")
 {
-	field(DESC, "Reads automatic gain")
+	field(DESC, "Reads auto gain")
 	field(DTYP, "basler")
 	field(INP,  "@$(CAMERA):getGainAuto")
 	field(PINI, "YES")

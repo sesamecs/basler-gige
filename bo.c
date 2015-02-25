@@ -32,13 +32,13 @@
 #include <errlog.h>
 #include <dbAccess.h>
 #include <recSup.h>
-#include <biRecord.h>
+#include <boRecord.h>
 
 /*Application includes*/
-#include "drvBasler.h"
+#include "basler.h"
 
 /*Macros*/
-#define NUMBER_OF_INPUTS	100
+#define NUMBER_OF_OUTPUTS	100
 #define NAME_LENGTH			100
 #define COMMAND_LENGTH		100
 
@@ -47,16 +47,16 @@ typedef struct
 	basler_t	device;
 	char		name[NAME_LENGTH];
 	char		command[COMMAND_LENGTH];
-} input_t;
+} output_t;
 
 /*Local variables*/
-static	input_t	inputs[NUMBER_OF_INPUTS];
-static	int		inputCount;
+static	output_t	outputs[NUMBER_OF_OUTPUTS];
+static	int			outputCount;
 
 /*Function prototypes*/
 static	long	init(int after);
-static	long	initRecord(biRecord *record);
-static 	long	readRecord(biRecord *record);
+static	long	initRecord(boRecord *record);
+static 	long	writeRecord(boRecord *record);
 static	void*	thread(void* arg);
 
 /*Function definitions*/
@@ -64,42 +64,42 @@ static long
 init(int after)
 {
 	if (!after)
-		inputCount = 0;
+		outputCount	=	0;
 	return 0;
 }
 
 static long 
-initRecord(biRecord *record)
+initRecord(boRecord *record)
 {
 	char*	parameters;
 	int		nameLength;
 
-	if (inputCount == NUMBER_OF_INPUTS)
+	if (outputCount == NUMBER_OF_OUTPUTS)
 	{
-		errlogPrintf("\x1B[31mUnable to initialize %s: Too many records\r\n\x1B[0m", record->name);
+		errlogPrintf("\x1B[31Unable to initialize %s: Too many records\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
-    if (record->inp.type != INST_IO) 
+    if (record->out.type != INST_IO) 
 	{
-		errlogPrintf("\x1B[31mUnable to initialize %s: Illegal input type\r\n\x1B[0m", record->name);
+		errlogPrintf("\x1B[31Unable to initialize %s: Illegal output type\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
 	/*
-	 * Parse input
+	 * Parse output
 	 */
-	parameters		=	record->inp.value.instio.string;
+	parameters		=	record->out.value.instio.string;
 
     /* Parse device name */
 	nameLength		=	strcspn(parameters, ":");		
 	if (nameLength == 0)
 	{
-		errlogPrintf("\x1B[31mUnable to initialize %s: Illegal input device name\r\n\x1B[0m", record->name);
+		errlogPrintf("\x1B[31Unable to initialize %s: Illegal output device name\r\n\x1B[0m", record->name);
 		return -1;
 	}
-	memcpy(inputs[inputCount].name, parameters, nameLength);
-	inputs[inputCount].name[nameLength]	=	'\0';
+	memcpy(outputs[outputCount].name, parameters, nameLength);
+	outputs[outputCount].name[nameLength]	=	'\0';
 
 	/* Skip separator*/
     parameters	+= 	nameLength + 1;
@@ -107,46 +107,48 @@ initRecord(biRecord *record)
     /* Parse command*/
 	if (strlen(parameters) == 0)
 	{
-		errlogPrintf("\x1B[31mUnable to initialize %s: Illegal input command\r\n\x1B[0m", record->name);
+		errlogPrintf("\x1B[31Unable to initialize %s: Illegal output command\r\n\x1B[0m", record->name);
 		return -1;
 	}
-	strcpy(inputs[inputCount].command, parameters);
+	strcpy(outputs[outputCount].command, parameters);
 
 	/* Set device*/
-	inputs[inputCount].device	=	basler_open(inputs[inputCount].name);
-	if (inputs[inputCount].device < 0)
+	outputs[outputCount].device	=	basler_open(outputs[outputCount].name);
+	if (outputs[outputCount].device < 0)
 	{
-		errlogPrintf("\x1B[31mUnable to initalize %s: Could not open device\r\n\x1B[0m", record->name);
+		errlogPrintf("\x1B[31Unable to initalize %s: Could not open device\r\n\x1B[0m", record->name);
 		return -1;
 	}
-	record->dpvt				=	&inputs[inputCount];
-	inputCount++;
+
+	record->dpvt	=	&outputs[outputCount];
+	record->mask	=	1;
+	outputCount++;
 
 	return 0;
 }
 
 static long 
-readRecord(biRecord *record)
+writeRecord(boRecord *record)
 {
 	int			status;
 	pthread_t	handle;
-	input_t*	private	=	(input_t*)record->dpvt;
+	output_t*	private	=	(output_t*)record->dpvt;
 
 	if (!record)
 	{
-		errlogPrintf("\x1B[31mUnable to read %s: Null record pointer\r\n\x1B[0m", record->name);
+		errlogPrintf("\x1B[31Unable to write %s: Null record pointer\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
     if (!private)
     {
-        errlogPrintf("\x1B[31mUnable to read %s: Null private structure pointer\r\n\x1B[0m", record->name);
+        errlogPrintf("\x1B[31Unable to write %s: Null private structure pointer\r\n\x1B[0m", record->name);
         return -1;
     }
 
 	if (!private->command || !strlen(private->command))
 	{
-		errlogPrintf("\x1B[31mUnable to read %s: Command is null or empty\r\n\x1B[0m", record->name);
+		errlogPrintf("\x1B[31Unable to write %s: Command is null or empty\r\n\x1B[0m", record->name);
 		return -1;
 	}
 
@@ -160,7 +162,7 @@ readRecord(biRecord *record)
 		status	=	pthread_create(&handle, NULL, thread, (void*)record);	
 		if (status)
 		{
-			errlogPrintf("\x1B[31mUnable to read %s: Unable to create thread\r\n\x1B[0m", record->name);
+			errlogPrintf("\x1B[31Unable to write %s: Unable to create thread\r\n\x1B[0m", record->name);
 			return -1;
 		}
 		record->pact = true;
@@ -169,31 +171,29 @@ readRecord(biRecord *record)
 
 	/*
 	 * This is the second pass, complete the request and return
-	 * Set UDF to false if VAL has been updated
 	 */
 	record->pact	=	false;
-
 	return 0;
 }
 
 void*
 thread(void* arg)
 {
-	int				status	=	0;
-	biRecord*		record	=	(biRecord*)arg;
-	input_t*		private	=	(input_t*)record->dpvt;
+	int			status	=	0;
+	boRecord*	record	=	(boRecord*)arg;
+	output_t*	private	=	(output_t*)record->dpvt;
 
 	/*Detach thread*/
 	pthread_detach(pthread_self());
 
-	if (strcmp(private->command, "getTriggerSource") == 0)
-		status	=	basler_getTriggerSource(private->device, (uint32_t*)&record->rval);
-	else if (strcmp(private->command, "getGainAuto") == 0)
-		status	=	basler_getGainAuto(private->device, (bool*)&record->rval);
+	if (strcmp(private->command, "setTriggerSource") == 0)
+		status	=	basler_setTriggerSource(private->device, record->rval);
+	else if (strcmp(private->command, "setGainAuto") == 0)
+		status	=	basler_setGainAuto(private->device, record->rval);
 	else
-		errlogPrintf("\x1B[31mUnable to read %s: Do not know how to process %s requested by %s\r\n\x1B[0m", record->name, private->command, record->name);
+		errlogPrintf("\x1B[31Unable to write %s: Do not know how to process %s requested by %s\r\n\x1B[0m", record->name, private->command, record->name);
 	if (status < 0)
-		errlogPrintf("\x1B[31mUnable to read %s: Driver thread is unable to read\r\n\x1B[0m", record->name);
+		errlogPrintf("\x1B[31Unable to write %s: Driver thread is unable to write\r\n\x1B[0m", record->name);
 
 	/*Process record*/
 	dbScanLock((struct dbCommon*)record);
@@ -210,13 +210,13 @@ struct devsup {
     DEVSUPFUN init_record;
     DEVSUPFUN get_ioint_info;
     DEVSUPFUN io;
-} devBiBasler =
+} devBoBasler =
 {
     5,
     NULL,
     init,
     initRecord,
     NULL,
-    readRecord
+    writeRecord,
 };
-epicsExportAddress(dset, devBiBasler);
+epicsExportAddress(dset, devBoBasler);
