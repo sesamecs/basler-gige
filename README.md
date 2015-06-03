@@ -15,3 +15,6 @@ Basler-gige is an EPICS IOC driver for the GigE camera series from Basler. This 
 * Download the Linux/x86 Pylon3 libraries from Basler. You can find them at [pylon3](http://www.baslerweb.com/media/documents/pylon-3.2.0-x86.tar.gz).
 * Decompress the tarball and follow the installation instructions. Note that the driver assumes that the libraries are installed under `/opt/pylon3`. Make sure you setup the runtime environment for the libraries, as mentioned in the installation procedure of the libraries.
 * The driver is written to be integrated with the standard EPICS driver framework. Clone the repository and integrate it in your own EPICS framework. Look in the main folder for examples on the database, startup script, and IOC application makefile.
+
+## Known Issues
+* The NIC card used to capture images from the camera must be GigE compliant (supports Jumbo frames). If it isn't, the driver will throw a "Failure to capture" exception as soon as an image acquisition is requested.
